@@ -1,3 +1,6 @@
+#define _GNU_SOURCE // for fopencookie hack in serialize_size
+#include <stdio.h>
+
 #include "libretro.h"
 #include "../gb_core/gb.h"
 #include "dmy_renderer.h"
@@ -14,6 +17,8 @@ retro_audio_sample_batch_t audio_batch_cb;
 //retro_environment_t environ_cb;
 retro_input_poll_t input_poll_cb;
 retro_input_state_t input_state_cb;
+
+static int _serialize_size = 0;
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -48,6 +53,7 @@ bool retro_load_game(const struct retro_game_info *info)
 	render[0] = new dmy_renderer();
 	g_gb[0] = new gb(render[0], true, true);
 	g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0);
+	_serialize_size = 0;
 	return true;
 }
 
@@ -91,11 +97,52 @@ size_t retro_get_memory_size(unsigned id)
 }
 
 
+// "counter" pseudo-file.
+static ssize_t cookie_read(void *cookie, char *buf, size_t size)
+{ *(int*)cookie += size; return size; }
+static ssize_t cookie_write(void *cookie, const char *buf, size_t size)
+{ *(int*)cookie += size; return size; }
+static int cookie_seek(void *cookie, off64_t *offset, int whence)
+{
+	if (whence == SEEK_SET) { *(int*)cookie = *offset; }
+	else if (whence == SEEK_CUR) { *(int*)cookie += *offset; }
+	else { return -1; }
+	return 0;
+}
+static int cookie_close(void *cookie) { return 0; }
 
-// TODO: savestates, cheats, load_game_special for 2 linked gb's
-size_t retro_serialize_size(void) { return 0; }
-bool retro_serialize(void *data_, size_t size) { (void)data_; (void)size; return true; }
-bool retro_unserialize(const void *data_, size_t size) { (void)data_; (void)size; return true; }
+static cookie_io_functions_t cookie_io = {
+	.read = cookie_read,
+	.write = cookie_write,
+	.seek = cookie_seek,
+	.close = cookie_close,
+};
+
+size_t retro_serialize_size(void)
+{
+	if (!_serialize_size) {
+		FILE* fcookie = fopencookie(&_serialize_size, "wb", cookie_io);
+		g_gb[0]->save_state(fcookie);
+		fclose(fcookie);
+	}
+	printf("%d\n", _serialize_size);
+	return _serialize_size;
+}
+bool retro_serialize(void *data_, size_t size)
+{
+	FILE *fmem = fmemopen(data_, size, "wb");
+	g_gb[0]->save_state(fmem);
+	return !fclose(fmem);
+}
+
+bool retro_unserialize(const void *data_, size_t size)
+{
+	FILE *fmem = fmemopen((void*)data_, size, "rb");
+	g_gb[0]->restore_state(fmem);
+	return !fclose(fmem);
+}
+
+// TODO: cheats, load_game_special for 2 linked gb's
 
 void retro_cheat_reset(void) { }
 void retro_cheat_set(unsigned index, bool enabled, const char *code) { (void)index; (void)enabled; (void)code; }
