@@ -959,7 +959,7 @@ void cpu::exec(int clocks)
 		div_clock+=tmp_clocks;
 		total_clock+=tmp_clocks;
 
-		if (ref_gb->get_regs()->TAC&0x04){//タイマ割りこみ
+		if (ref_gb->get_regs()->TAC&0x04){//タイマ割りこみ // Timer interrupt
 			sys_clock+=tmp_clocks;
 			if (sys_clock>timer_clocks[ref_gb->get_regs()->TAC&0x03]){
 				sys_clock&=timer_clocks[ref_gb->get_regs()->TAC&0x03]-1;
@@ -984,7 +984,7 @@ void cpu::exec(int clocks)
 				ref_gb->get_regs()->SC&=3;
 			}
 			else{
-				if (ref_gb->hook_ext){ // フックします
+				if (ref_gb->hook_ext){ // フックします // Hook
 					byte ret=ref_gb->hook_proc.send(ref_gb->get_regs()->SB);
 					ref_gb->get_regs()->SB=ret;
 					ref_gb->get_regs()->SC&=3;

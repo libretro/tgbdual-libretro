@@ -17,9 +17,9 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-// レンダラのダミー実装
-// Dummy implementation of the renderer
+// libretro implementation of the renderer, should probably be renamed from dmy.
 
+#include <string.h>
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -58,8 +58,18 @@ word dmy_renderer::unmap_color(word gb_col)
 
 void dmy_renderer::refresh() {
 	fixed_time = time(NULL);
-	int16_t stream[SAMPLES_PER_FRAME*2];
-	if (which_gb == 0) {
+	static int16_t stream[SAMPLES_PER_FRAME*2];
+	if (g_gb[1]) { // if dual gb mode, mix down to one per channel
+		int16_t tmp_stream[SAMPLES_PER_FRAME*2];
+		this->snd_render->render(tmp_stream, SAMPLES_PER_FRAME);
+		for(int i = 0; i < SAMPLES_PER_FRAME; ++i) {
+			int l = tmp_stream[(i*2)+0], r = tmp_stream[(i*2)+1];
+			stream[(i*2)+which_gb] = int16_t( (l+r) / 2 );
+		}
+		if (which_gb == 1) {
+			audio_batch_cb(stream, SAMPLES_PER_FRAME);
+		}
+	} else {
 		this->snd_render->render(stream, SAMPLES_PER_FRAME);
 		audio_batch_cb(stream, SAMPLES_PER_FRAME);
 	}
@@ -81,7 +91,14 @@ int dmy_renderer::check_pad()
 }
 
 void dmy_renderer::render_screen(byte *buf,int width,int height,int depth) {
-	if(which_gb == 0) {
+	static byte joined_buf[160*144*2*2]; // two screens' worth of 16-bit data
+	const int half = sizeof(joined_buf)/2;
+	if(g_gb[1]) { // are we running two gb's?
+		memcpy(joined_buf + which_gb*half, buf, half);
+		if(which_gb == 1) {
+			video_cb(joined_buf, width, height*2, width*((depth+7)/8));
+		}
+	} else {
 		video_cb(buf, width, height, width*((depth+7)/8));
 	}
 }

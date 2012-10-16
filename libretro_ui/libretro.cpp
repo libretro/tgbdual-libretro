@@ -32,12 +32,13 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
+	int w = 160, h = 144;
+	if (g_gb[1]) h *= 2; // for dual gameboy mode
 	info->timing.fps = 60.0f;
 	info->timing.sample_rate = 44100.0f;
-	info->geometry.base_width = info->geometry.max_width = 160;
-	info->geometry.base_height = info->geometry.max_height = 144;
-	//info.geometry.max_height *= 2; // TODO: for dual gameboy mode
-	info->geometry.aspect_ratio = 10.0 / 9.0;
+	info->geometry.base_width = info->geometry.max_width = w;
+	info->geometry.base_height = info->geometry.max_height = h;
+	info->geometry.aspect_ratio = float(w) / float(h);
 }
 
 
@@ -51,6 +52,7 @@ void retro_init(void)
 void retro_deinit(void)
 {
 }
+
 
 
 bool retro_load_game(const struct retro_game_info *info)
@@ -77,7 +79,7 @@ void retro_reset(void)
 
 void retro_run(void)
 {
-	_BOTH_GB_ g_gb[i]->run(); // TODO: update rtc?
+	_BOTH_GB_ g_gb[i]->run();
 }
 
 
@@ -141,29 +143,54 @@ static cookie_io_functions_t cookie_io = {
 	.close = cookie_close,
 };
 
-// note: we only save for g_gb[0].
-// open question: would saving both into the same file be desirable ever?
+// question: would saving both gb's into the same file be desirable ever?
+// answer: yes, it's most likely needed to sync up netplay and for bsv records.
 size_t retro_serialize_size(void)
 {
 	if (!_serialize_size) {
 		FILE* fcookie = fopencookie(&_serialize_size, "wb", cookie_io);
-		g_gb[0]->save_state(fcookie);
+		_BOTH_GB_ g_gb[i]->save_state(fcookie);
 		fclose(fcookie);
 	}
 	return _serialize_size;
 }
+
 bool retro_serialize(void *data_, size_t size)
 {
 	FILE *fmem = fmemopen(data_, size, "wb");
-	g_gb[0]->save_state(fmem);
+	_BOTH_GB_ g_gb[i]->save_state(fmem);
 	return !fclose(fmem);
 }
 
 bool retro_unserialize(const void *data_, size_t size)
 {
 	FILE *fmem = fmemopen((void*)data_, size, "rb");
-	g_gb[0]->restore_state(fmem);
+	_BOTH_GB_ g_gb[i]->restore_state(fmem);
 	return !fclose(fmem);
+}
+
+
+
+bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num)
+{
+	if( !(type == RETRO_GAME_TYPE_SUPER_GAME_BOY && num == 2) ) {
+		return false;
+	}
+	retro_load_game(&info[0]);
+	render[1] = new dmy_renderer(1);
+	g_gb[1] = new gb(render[1], true, true);
+	g_gb[1]->load_rom((byte*)info[1].data, info[1].size, NULL, 0);
+	// TODO: figure out how to hook up ext ports and IR LEDs
+	/* 
+	struct ext_hook {
+		byte (*send)(byte);
+		bool (*led)(void);
+	};
+
+	g_gb[0].hook_extport( ? )
+	cpu::seri_send ?
+	 */
+	return true;
 }
 
 
@@ -172,21 +199,14 @@ void retro_cheat_reset(void)
 {
 	_BOTH_GB_ g_gb[i]->get_cheat()->clear();
 }
+
 void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {
 	(void)index; (void)enabled; (void)code;
 	// TODO
 }
 
-bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num)
-{
-	// TODO: use this to load 2 games for 2 linked gb's
-	//  this will require referencing g_gb[1] in the rest of the code too
-	(void)type;
-	(void)info;
-	(void)num;
-	return false;
-}
+
 
 // start boilerplate
 
