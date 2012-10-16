@@ -34,7 +34,7 @@ extern retro_input_poll_t input_poll_cb;
 extern retro_input_state_t input_state_cb;
 
 //#define SAMPLES_PER_FRAME ((int)((44100./60.0)+0))
-#define SAMPLES_PER_FRAME 160
+#define SAMPLES_PER_FRAME (44100*160/1000)
 
 dmy_renderer::dmy_renderer()
 {

@@ -2,17 +2,17 @@
 LIBS += ../gb_core/*.o -lz -lm
 CFLAGS = -O3 -fPIC
 CXXFLAGS = $(CFLAGS)
-LDFLAGS = -shared -Wl,--version-script=link.T -Wl,--no-undefined
+LDFLAGS = -shared -Wl,--version-script=link.T
 
 SOURCES=$(wildcard *.cpp)
 CSOURCES=$(wildcard *.c)
-OBJS=$(SOURCES:.cpp=.o)
-COBJS=$(CSOURCES:.c=.o)
+OBJS = $(SOURCES:.cpp=.o)
+OBJS += $(CSOURCES:.c=.o)
 
 all: libretro.so
 
-libretro.so: $(OBJS) $(COBJS)
-	$(CXX) -o libretro.so $(OBJS) $(COBJS) $(LIBS) $(CXXFLAGS) $(LDFLAGS)
+libretro.so: $(OBJS)
+	$(CXX) -o libretro.so $(OBJS) $(LIBS) $(CXXFLAGS) $(LDFLAGS)
 
 %.o:%.c
 	$(CC) -c $(CFLAGS) $<
@@ -21,5 +21,5 @@ libretro.so: $(OBJS) $(COBJS)
 	$(CXX) -c $(CXXFLAGS) $<
 
 clean:
-	rm -f $(OBJS) $(COBJS) libretro.so
+	rm -f $(OBJS) libretro.so
 

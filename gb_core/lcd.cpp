@@ -378,6 +378,7 @@ void lcd::bg_render_color(void *buf,int scanline)
 	trans_count=0;
 
 	// カラーではOFF機能が働かない?(僕のキャンプ場､モンコレナイト)
+	// OFF function does not work in color? (my campsite, Moncolle Night)
 	if (!(ref_gb->get_regs()->LCDC&0x80)/*||!(ref_gb->get_regs()->LCDC&0x01)*/||
 		(ref_gb->get_regs()->WY<=(dword)scanline&&ref_gb->get_regs()->WX<8&&(ref_gb->get_regs()->LCDC&0x20))){
 		if (!(ref_gb->get_regs()->LCDC&0x80)/*||!(ref_gb->get_regs()->LCDC&0x01)*/){

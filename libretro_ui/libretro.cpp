@@ -64,8 +64,7 @@ void retro_reset(void)
 
 void retro_run(void)
 {
-	render[0]->refresh();
-	g_gb[0]->run();
+	g_gb[0]->run(); //render[0]->refresh(); is apparently redundant
 }
 
 void *retro_get_memory_data(unsigned id)
