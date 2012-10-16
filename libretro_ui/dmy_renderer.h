@@ -26,7 +26,6 @@ public:
 	~dmy_renderer();
 
 	virtual void reset() {}
-	virtual void refresh() {}
 	virtual word get_sensor(bool x_y) { return 0; }
 	virtual void output_log(char *mes,...) {}
 	virtual byte get_time(int type) { return 0; }
@@ -37,6 +36,7 @@ public:
 	virtual word map_color(word gb_col);
 	virtual word unmap_color(word gb_col);
 	virtual int check_pad();
+	virtual void refresh();
 
 private:
 	int key_state;
