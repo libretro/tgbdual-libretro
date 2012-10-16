@@ -20,6 +20,8 @@ retro_input_state_t input_state_cb;
 
 static int _serialize_size = 0;
 
+
+
 void retro_get_system_info(struct retro_system_info *info)
 {
 	info->library_name = "TGB Dual";
@@ -36,6 +38,8 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->geometry.base_height = _avinfo.geometry.max_height = 144;
 	info->geometry.aspect_ratio = 10.0 / 9.0;
 }
+
+
 
 void retro_init(void)
 {
@@ -73,6 +77,8 @@ void retro_run(void)
 	g_gb[0]->run(); //render[0]->refresh(); is apparently redundant
 }
 
+
+
 void *retro_get_memory_data(unsigned id)
 {
 	switch(id) {
@@ -95,6 +101,7 @@ size_t retro_get_memory_size(unsigned id)
 	}
 	return 0;
 }
+
 
 
 // "counter" pseudo-file.
@@ -142,13 +149,22 @@ bool retro_unserialize(const void *data_, size_t size)
 	return !fclose(fmem);
 }
 
-// TODO: cheats, load_game_special for 2 linked gb's
 
-void retro_cheat_reset(void) { }
-void retro_cheat_set(unsigned index, bool enabled, const char *code) { (void)index; (void)enabled; (void)code; }
+
+void retro_cheat_reset(void)
+{
+	g_gb[0]->get_cheat()->clear();
+}
+void retro_cheat_set(unsigned index, bool enabled, const char *code)
+{
+	(void)index; (void)enabled; (void)code;
+	// TODO
+}
 
 bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num)
 {
+	// TODO: use this to load 2 games for 2 linked gb's
+	//  this will require referencing g_gb[1] in the rest of the code too
 	(void)type;
 	(void)info;
 	(void)num;
