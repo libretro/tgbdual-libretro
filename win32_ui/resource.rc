@@ -1,0 +1,818 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 日本語 resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_JPN)
+#ifdef _WIN32
+LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
+#pragma code_page(932)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU MENU 
+BEGIN
+    POPUP "ファイル(&F)"
+    BEGIN
+        MENUITEM "Slot1に読みこみ(&1)",         ID_LOADROM
+        MENUITEM "Slot1リセット(&R)",           ID_RESET1
+        POPUP "状態保存(&S)"
+        BEGIN
+            MENUITEM "dummy",                       ID_SAVE_DMY
+        END
+        POPUP "状態復元(&L)"
+        BEGIN
+            MENUITEM "dummy",                       ID_LOAD_DMY
+        END
+        MENUITEM "一時停止(&P)",                ID_PAUSE
+        MENUITEM "Slot1解放(&F)",               ID_RELEASE_1
+        MENUITEM SEPARATOR
+        MENUITEM "Slot2に読みこみ(&2)",         ID_LOADROM2
+        MENUITEM "Slot2リセット(&E)",           ID_RESET2
+        MENUITEM "Slot2解放(&Q)",               ID_RELEASE_2
+        MENUITEM SEPARATOR
+        MENUITEM "通信対戦(&T)",                ID_CONNECT
+        MENUITEM SEPARATOR
+        MENUITEM "終了(&X)",                    ID_EXIT
+    END
+    POPUP "オプション(&O)"
+    BEGIN
+        MENUITEM "キーコンフィグ(&K)",          ID_KEY
+        MENUITEM "サウンド設定(&A)",            ID_SOUND
+        MENUITEM "速度設定(&S)",                ID_SPEED
+        POPUP "画面設定(&L)"
+        BEGIN
+            MENUITEM "フルスクリーン   Alt+Enter",  ID_FULLSCREEN
+            MENUITEM "VSync(&V)",                   ID_VSYNC
+            MENUITEM SEPARATOR
+            MENUITEM "x1",                          ID_X1
+            MENUITEM "x2",                          ID_X2
+            MENUITEM "x3",                          ID_X3
+            MENUITEM "x4",                          ID_X4
+            MENUITEM SEPARATOR
+            MENUITEM "BG Layer",                    ID_BG
+            MENUITEM "Window Layer",                ID_WINDOW
+            MENUITEM "Sprite Layer",                ID_SPRITE
+            MENUITEM SEPARATOR
+            MENUITEM "フィルタ係数(&F)",            ID_FILTER
+        END
+        POPUP "機種設定(&G)"
+        BEGIN
+            MENUITEM "GB(&G)",                      ID_MACHINE_GB
+            MENUITEM "GBC(&C)",                     ID_MACHINE_GBC
+            MENUITEM "GBA(&A)",                     ID_MACHINE_GBA
+            MENUITEM "自動判定(&A)",                ID_MACHINE_AUTO
+            MENUITEM SEPARATOR
+            MENUITEM "デフォルトでGBAモードを使用(&D)", ID_DEFAULT_GBA
+        END
+        POPUP "エミュレータ設定(&E)"
+        BEGIN
+            POPUP "描画フロー設定(&F)"
+            BEGIN
+                MENUITEM "Heap->Sys->Primary (&1)",     ID_SURFACETYPE_1
+                MENUITEM "Heap->VRAM->Primary (&2)",    ID_SURFACETYPE_2
+                MENUITEM "Heap->Sys->VRAM->Primary (&3)", ID_SURFACETYPE_3
+            END
+            POPUP "プロセスの優先度(&P)"
+            BEGIN
+                MENUITEM "REALTIME (最高､非推奨) (&H)", ID_PROCESS_REALTIME
+                MENUITEM "HIGH (&H)",                   ID_PROCESS_HIGH
+                MENUITEM "ABOVE_NORMAL (A)",            ID_PROCESS_ABOVE_NORMAL
+
+                MENUITEM "NORMAL (&N)",                 ID_PROCESS_NORMAL
+                MENUITEM "BELOW_NORMAL (&B)",           ID_PROCESS_BELOW_NORMAL
+
+                MENUITEM "IDLE (最低) (&I)",            ID_PROCESS_IDLE
+            END
+        END
+        MENUITEM "ディレクトリ設定(&D)",        ID_DIRECTORY
+        MENUITEM SEPARATOR
+        POPUP "PARもどき(&P)"
+        BEGIN
+            MENUITEM "サーチ/入力(&S)",             ID_PAR
+            MENUITEM "入力のみ (&A)",               ID_CHEAT
+            MENUITEM "メモリビューワ(&M)",          ID_MEM_DUMP
+            MENUITEM "RAMバンクビューワ(&N)",       ID_NOMEM_DUMP
+        END
+        POPUP "記録(&R)"
+        BEGIN
+            MENUITEM "画面(&G)   Ctrl+P",           ID_SNAPSHOT
+            MENUITEM "サウンド(&S)   Ctrl+O",       ID_SOUNDRECORD
+            POPUP "ムービー(&M)"
+            BEGIN
+                MENUITEM "記録開始(&R)",                ID_MOVIE_START
+                MENUITEM "記録終了(&S)",                ID_MOVIE_END
+                MENUITEM SEPARATOR
+                MENUITEM "再生開始(&P)",                ID_MOVIE_PLAY
+                MENUITEM "再生中断(&Q)",                ID_MOVIE_PLAY_STOP
+            END
+        END
+        POPUP "特殊(&S)"
+        BEGIN
+            MENUITEM "MBC3/RTC(&R)",                ID_REALTIMECLOCK
+            MENUITEM "モーションセンサー(&M)",      ID_KOROKORO
+        END
+        POPUP "周辺機器(&E)"
+        BEGIN
+            MENUITEM "dummy",                       ID_ENVIRONMRNT
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "ログ表示(&L)",                ID_SHOWLOG
+    END
+    POPUP "ヘルプ(&H)"
+    BEGIN
+        MENUITEM "dummy(&H)",                   ID_TGBHELP
+    END
+END
+
+IDR_CHEAT_MENU MENU 
+BEGIN
+    POPUP "ファイル(&F)"
+    BEGIN
+        MENUITEM "読み込み(&L)",                ID_CHEAT_LOAD
+        MENUITEM "保存(&S)",                    ID_CHEAT_SAVE
+        MENUITEM SEPARATOR
+        MENUITEM "終了(&X)",                    ID_CHEAT_EXIT
+    END
+    POPUP "編集(&E)"
+    BEGIN
+        MENUITEM "全削除(&A)",                  ID_ALL_DELETE
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_MAIN                ICON                    "icon.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_ACCELERATOR ACCELERATORS 
+BEGIN
+    "O",            ID_SOUNDRECORD,         VIRTKEY, CONTROL, NOINVERT
+    "P",            ID_SNAPSHOT,            VIRTKEY, CONTROL, NOINVERT
+    "T",            ID_SETTRACE,            VIRTKEY, CONTROL, NOINVERT
+    VK_ESCAPE,      ID_EXIT,                VIRTKEY, NOINVERT
+    VK_RETURN,      ID_FULLSCREEN,          VIRTKEY, ALT, NOINVERT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_VERSION DIALOGEX 0, 0, 129, 60
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "TGB バージョン情報"
+FONT 9, "ＭＳ Ｐゴシック", 0, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,39,40,50,13
+    LTEXT           "TGB Dual Ver",IDC_STATIC,33,7,42,8
+    LTEXT           "Copyright(C) 2000-2004 Hii",IDC_STATIC,26,25,82,8
+    LTEXT           "Vol.8'''",IDC_STATIC,79,7,19,8
+END
+
+IDD_LOG DIALOGEX 0, 0, 186, 156
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Log"
+FONT 9, "ＭＳ Ｐゴシック", 0, 0, 0x0
+BEGIN
+    CONTROL         "",IDC_LOG,"RICHEDIT",TCS_HOTTRACK | TCS_VERTICAL | 
+                    TCS_RAGGEDRIGHT | TCS_FOCUSONBUTTONDOWN | 
+                    TCS_MULTISELECT | WS_BORDER | WS_VSCROLL | WS_HSCROLL | 
+                    WS_TABSTOP,0,0,186,156
+END
+
+IDD_KEY DIALOGEX 0, 0, 258, 149
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Key Config"
+FONT 9, "ＭＳ Ｐゴシック", 0, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,215,125,35,15
+    GROUPBOX        "Slot1",IDC_STATIC,5,5,78,138
+    LTEXT           "A",IDC_STATIC,13,18,8,8
+    LTEXT           "B",IDC_STATIC,13,33,8,8
+    LTEXT           "Start",IDC_STATIC,13,48,15,8
+    LTEXT           "Select",IDC_STATIC,13,63,19,8
+    LTEXT           "Up",IDC_STATIC,13,78,9,8
+    LTEXT           "Down",IDC_STATIC,13,93,17,8
+    LTEXT           "Left",IDC_STATIC,13,108,12,8
+    LTEXT           "Right",IDC_STATIC,13,123,16,8
+    EDITTEXT        IDC_1A,43,18,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_1B,43,33,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_1START,43,48,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_1SELECT,43,63,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_1UP,43,78,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_1DOWN,43,93,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_1LEFT,43,108,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_1RIGHT,43,123,30,12,ES_AUTOHSCROLL | ES_READONLY
+    GROUPBOX        "Slot2",IDC_STATIC,90,5,78,138
+    LTEXT           "A",IDC_STATIC,98,18,8,8
+    LTEXT           "B",IDC_STATIC,98,33,8,8
+    LTEXT           "Start",IDC_STATIC,98,48,15,8
+    LTEXT           "Select",IDC_STATIC,98,63,19,8
+    LTEXT           "Up",IDC_STATIC,98,78,9,8
+    LTEXT           "Down",IDC_STATIC,98,93,17,8
+    LTEXT           "Left",IDC_STATIC,98,108,12,8
+    LTEXT           "Right",IDC_STATIC,98,123,16,8
+    EDITTEXT        IDC_2A,129,18,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_2B,129,33,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_2START,129,48,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_2SELECT,129,63,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_2UP,129,78,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_2DOWN,129,93,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_2LEFT,129,108,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_2RIGHT,129,123,30,12,ES_AUTOHSCROLL | ES_READONLY
+    GROUPBOX        "System",IDC_STATIC,175,5,75,95
+    LTEXT           "Fast",IDC_STATIC,185,20,14,8
+    LTEXT           "Save",IDC_STATIC,185,35,15,8
+    LTEXT           "Load",IDC_STATIC,185,50,15,8
+    EDITTEXT        IDC_FAST,210,20,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_SAVE,210,35,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_LOAD,210,50,30,12,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "Auto",IDC_STATIC,185,63,15,8
+    LTEXT           "Fire",IDC_STATIC,187,71,12,8
+    EDITTEXT        IDC_AUTO,210,65,30,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "FFBによる振動",IDC_FFB,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,175,110,60,10
+    LTEXT           "Pause",IDC_STATIC,185,80,19,8
+    EDITTEXT        IDC_PAUSE,210,80,30,12,ES_AUTOHSCROLL | ES_READONLY
+END
+
+IDD_SPEED DIALOG  0, 0, 199, 135
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Speed Setting"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,145,115,50,14
+    EDITTEXT        IDC_SKIP,70,15,40,12,ES_AUTOHSCROLL
+    LTEXT           "フレームスキップ：",IDC_STATIC,10,20,54,8
+    GROUPBOX        "通常の動作速度",IDC_STATIC,5,5,190,50
+    LTEXT           "Frame(s)",IDC_STATIC,115,20,27,8
+    LTEXT           "仮想FPS：",IDC_STATIC,30,35,30,8
+    EDITTEXT        IDC_FPS,70,35,40,12,ES_AUTOHSCROLL
+    LTEXT           "FPS",IDC_STATIC,115,40,13,8
+    CONTROL         "リミッタを外す",IDC_LIMITTER,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,135,35,55,10
+    EDITTEXT        IDC_SKIP2,70,70,40,12,ES_AUTOHSCROLL
+    LTEXT           "フレームスキップ：",IDC_STATIC,10,75,54,8
+    GROUPBOX        "FastForwerd 時の動作速度",IDC_STATIC,5,60,190,50
+    LTEXT           "Frame(s)",IDC_STATIC,115,75,27,8
+    LTEXT           "仮想FPS：",IDC_STATIC,30,90,30,8
+    EDITTEXT        IDC_FPS2,70,90,40,12,ES_AUTOHSCROLL
+    LTEXT           "FPS",IDC_STATIC,115,95,13,8
+    CONTROL         "リミッタを外す",IDC_LIMITTER2,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,135,90,55,10
+    CONTROL         "FPSを表示する",IDC_SHOWFPS,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,10,115,60,10
+END
+
+IDD_CONNECT DIALOGEX 0, 0, 143, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "通信準備"
+FONT 9, "ＭＳ Ｐゴシック", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "接続開始",IDC_START,12,186,54,15
+    PUSHBUTTON      "キャンセル",IDCANCEL,78,186,53,15
+    GROUPBOX        "接続に関する情報",IDC_STATIC,6,60,133,84
+    CONTROL         "サーバー",IDC_SERVER,"Button",BS_AUTORADIOBUTTON,10,75,
+                    43,10
+    CONTROL         "クライアント",IDC_CLIENT,"Button",BS_AUTORADIOBUTTON,10,
+                    90,50,10
+    LTEXT           "IPアドレス",IDC_STATIC,12,108,30,8
+    LTEXT           "未接続です",IDC_STATUS,19,163,112,8
+    GROUPBOX        "状態",IDC_STATIC,6,150,132,30
+    GROUPBOX        "使用するROMイメージ",IDC_STATIC,5,5,133,50
+    EDITTEXT        IDC_MY_ROM,45,20,69,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_ROM_SELECT1,120,21,10,10
+    RTEXT           "こちら側:",IDC_STATIC,12,24,26,8
+    RTEXT           "相手側:",IDC_STATIC,12,36,26,8
+    EDITTEXT        IDC_TAR_ROM,45,35,69,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_ROM_SELECT2,120,37,10,10
+    COMBOBOX        IDC_IPADDR,48,108,84,72,CBS_DROPDOWN | CBS_AUTOHSCROLL | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "自分のIPアドレス:",IDC_STATIC,66,72,51,8
+    LISTBOX         IDC_YOUR_IP,66,84,66,18,LBS_SORT | LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+    LTEXT           "ポート番号",IDC_STATIC,12,126,36,12
+    EDITTEXT        IDC_PORT,90,126,42,12,ES_AUTOHSCROLL
+    LTEXT           "(1024-65535)",IDC_STATIC,48,126,42,12
+END
+
+IDD_SOUND DIALOG  0, 0, 99, 159
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "サウンドエミュレーション設定"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    CONTROL         "SQARE WAVE 1",IDC_SQ1,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,10,40,64,10
+    CONTROL         "SQARE WAVE 2",IDC_SQ2,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,10,54,64,10
+    CONTROL         "VOLUNTARY WAVE",IDC_WAV,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,10,70,75,10
+    CONTROL         "NOISE",IDC_NOI,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,
+                    84,35,10
+    GROUPBOX        "各チャンネルのON/OFF",IDC_STATIC,5,5,85,95
+    CONTROL         "エコー",IDC_ECHO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    10,120,35,10
+    CONTROL         "ローパスフィルタ",IDC_LOWPASS,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,10,135,64,10
+    CONTROL         "MASTER",IDC_MASTER,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,10,20,42,10
+    GROUPBOX        "エフェクタ",IDC_STATIC,5,105,85,45
+END
+
+IDD_KOROKORO DIALOG  0, 0, 123, 165
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "モーションセンサーコンフィグ"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,70,145,50,15
+    CONTROL         "アナログジョイスティックを使わない",IDC_UNUSE,"Button",
+                    BS_AUTORADIOBUTTON,5,40,117,10
+    CONTROL         "アナログジョイスティックを使う",IDC_USE_ANALOG,"Button",
+                    BS_AUTORADIOBUTTON,5,5,102,10
+    GROUPBOX        "各々の設定",IDC_SPLIT,20,55,75,80
+    LTEXT           "Up",IDC_SKUP,25,70,9,8
+    LTEXT           "Down",IDC_SKDOWN,25,85,17,8
+    LTEXT           "Left",IDC_SKLEFT,25,100,12,8
+    LTEXT           "Right",IDC_SKRIGHT,25,115,16,8
+    EDITTEXT        IDC_KUP,55,70,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_KDOWN,55,85,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_KLEFT,55,100,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_KRIGHT,55,115,30,12,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_SENSITIVE,65,20,30,12,ES_AUTOHSCROLL
+    LTEXT           "感度(1-100)：",IDC_SS,20,20,40,8
+END
+
+IDD_PAR DIALOG  0, 0, 259, 345
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "PAR もどき"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    GROUPBOX        "検索場所",IDC_STATIC,5,5,85,105
+    CONTROL         "SRAM(A000h-C000h)",IDC_SRAM,"Button",BS_AUTOCHECKBOX | 
+                    WS_GROUP | WS_TABSTOP,9,20,74,10
+    CONTROL         "非カレントSRAM(N/A)",IDC_NOSRAM,"Button",
+                    BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,9,35,73,10
+    CONTROL         "RAM1 (C000h-CFFFh)",IDC_RAM1,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,9,50,77,10
+    CONTROL         "RAM2 (D000h-DFFFh)",IDC_RAM2,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,9,65,76,10
+    CONTROL         "非カレントRAM(N/A)",IDC_NORAM,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,9,80,73,10
+    CONTROL         "HIMEMエリア(FF80h-)",IDC_HIMEM,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,9,95,79,10
+    GROUPBOX        "データタイプ",IDC_STATIC,95,5,51,40
+    CONTROL         "16進",IDC_HEX,"Button",BS_AUTORADIOBUTTON | WS_GROUP,99,
+                    15,26,10
+    CONTROL         "10進",IDC_DEC,"Button",BS_AUTORADIOBUTTON,99,30,26,10
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ,5,120,153,1
+    LTEXT           "数値：",IDC_STATIC,5,130,20,8
+    EDITTEXT        IDC_SEARCH_NUM,35,130,43,14,ES_AUTOHSCROLL
+    GROUPBOX        "データ長(バイト)",IDC_STATIC,5,150,90,40
+    CONTROL         "BYTE(1)",IDC_BYTE,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP,9,160,35,10
+    CONTROL         "WORD(2)",IDC_WORD,"Button",BS_AUTORADIOBUTTON,52,160,37,
+                    10
+    CONTROL         "FWORD(3)",IDC_FWORD,"Button",BS_AUTORADIOBUTTON,9,175,
+                    41,10
+    CONTROL         "DWORD(4)",IDC_DWORD,"Button",BS_AUTORADIOBUTTON,52,175,
+                    41,10
+    PUSHBUTTON      "検索(&S)",IDC_SEARCH,95,130,35,14
+    GROUPBOX        "検索タイプ",IDC_STATIC,99,150,60,40
+    CONTROL         "ノーマル検索",IDC_NORMAL,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP,103,160,51,10
+    CONTROL         "絞りこみ検索",IDC_MUCH,"Button",BS_AUTORADIOBUTTON,103,
+                    175,51,10
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ,5,205,243,1
+    LTEXT           "結果：",IDC_STATIC,5,215,20,8
+    LISTBOX         IDC_DEST,25,215,43,90,LBS_SORT | LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDVERT,74,210,1,99
+    LTEXT           "書き込み(コード追加)：",IDC_STATIC,82,215,69,8
+    LTEXT           "アドレス：",IDC_STATIC,82,230,30,8
+    LTEXT           "データ：",IDC_STATIC,82,245,26,8
+    LTEXT           "アドレス：",IDC_STATIC,82,265,30,8
+    LTEXT           "名前",IDC_STATIC,82,300,15,8
+    LTEXT           "データ：",IDC_STATIC,82,281,26,8
+    EDITTEXT        IDC_ADDR,112,230,34,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_DAT,112,245,34,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_ADDR2,112,265,34,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_CHEAT_NAME,112,300,34,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_DAT2,112,281,34,12,ES_AUTOHSCROLL
+    LTEXT           "(Hex)",IDC_STATIC,146,230,17,10
+    LTEXT           "(Hex)",IDC_STATIC,146,265,17,10
+    GROUPBOX        "種類",IDC_STATIC,172,215,60,75
+    CONTROL         "一度だけ",IDC_ONCE,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP,177,225,36,10
+    CONTROL         "永久に",IDC_FOREVER,"Button",BS_AUTORADIOBUTTON,177,235,
+                    31,10
+    CONTROL         "比較(＝)",IDC_CMP_EQUAL,"Button",BS_AUTORADIOBUTTON,177,
+                    245,39,10
+    PUSHBUTTON      "追加",IDC_ADD_SEARCH,177,295,28,15
+    CONTROL         "比較(＜)",IDC_CMP_LESS,"Button",BS_AUTORADIOBUTTON,177,
+                    255,39,10
+    CONTROL         "比較(＞)",IDC_CMP_LARGE,"Button",BS_AUTORADIOBUTTON,177,
+                    265,43,10
+    CONTROL         "繰り返し",IDC_LOOP,"Button",BS_AUTORADIOBUTTON,177,275,
+                    43,10
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDVERT,163,5,1,194
+    LTEXT           "チートコード：",IDC_STATIC,168,5,56,8
+    LTEXT           "コード：",IDC_STATIC,172,23,30,8
+    EDITTEXT        IDC_CODE,202,20,47,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "追加",IDC_ADD,220,60,30,14
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ | SS_SUNKEN,168,80,
+                    84,1
+    LTEXT           "リスト：",IDC_STATIC,172,85,30,8
+    LISTBOX         IDC_LIST,172,100,78,80,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
+                    WS_HSCROLL | WS_TABSTOP
+    PUSHBUTTON      "全削除",IDC_ALL_CLEAR,175,185,35,14
+    PUSHBUTTON      "削除",IDC_DELETE,215,185,35,14
+    LTEXT           "PAR もどき Ver 0.30",IDC_STATIC,9,325,65,8
+    PUSHBUTTON      "保存",IDC_CHEAT_SAVE,85,325,31,14
+    PUSHBUTTON      "読みこみ",IDC_CHEAT_READ,155,325,34,14
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ,5,315,247,1
+    DEFPUSHBUTTON   "OK",IDOK,211,325,39,14
+    PUSHBUTTON      "上書き",IDC_OVER_RIDE,121,325,30,14
+    EDITTEXT        IDC_ADD_NAME,202,40,47,12,ES_AUTOHSCROLL
+    LTEXT           "名前：",IDC_STATIC,172,40,22,8
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDVERT,200,320,1,20
+END
+
+IDD_MEM_DUMP DIALOG  0, 0, 257, 135
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "メモリビュー"
+FONT 9, "ＭＳ ゴシック"
+BEGIN
+    SCROLLBAR       IDC_SCROLL,240,20,9,90,SBS_VERT
+    LTEXT           "メモリ：",IDC_STATIC,5,5,34,8
+    LISTBOX         IDC_MEMORY,7,19,233,91,LBS_NOINTEGRALHEIGHT
+    EDITTEXT        IDC_ADDRESS,163,115,40,14,ES_AUTOHSCROLL
+    LTEXT           "アドレス指定：",IDC_STATIC,95,120,58,8
+    PUSHBUTTON      "移動",IDC_MOVE,211,115,39,14
+END
+
+IDD_DIRECTORY DIALOG  0, 0, 214, 69
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "ディレクトリ設定"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,160,50,50,14
+    EDITTEXT        IDC_SAVE_PATH,30,5,165,12,ES_AUTOHSCROLL
+    LTEXT           "セーブ：",IDC_STATIC,5,5,24,8
+    PUSHBUTTON      "...",IDC_SAVE_DIR,200,5,10,12
+    LTEXT           "メディア:",IDC_STATIC,5,25,25,8
+    EDITTEXT        IDC_MEDIA_PATH,30,25,165,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_MEDIA_DIR,200,25,10,13
+END
+
+IDD_CLOCK DIALOG  0, 0, 163, 45
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "MBC3 リアルタイムクロック設定"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "適用",IDOK,95,25,30,15
+    PUSHBUTTON      "OK",IDCANCEL,130,25,30,15
+    EDITTEXT        IDC_DAY,5,5,25,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "日",IDC_STATIC,35,10,10,10
+    EDITTEXT        IDC_HOUR,45,5,25,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "時",IDC_STATIC,75,10,8,8
+    EDITTEXT        IDC_MIN,85,5,25,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "分",IDC_STATIC,115,10,8,8
+    LTEXT           "秒",IDC_STATIC,155,10,8,8
+    EDITTEXT        IDC_SEC,125,5,25,12,ES_RIGHT | ES_AUTOHSCROLL
+END
+
+IDD_CHAT DIALOGEX 0, 0, 193, 150
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION
+CAPTION "ミニチャット"
+FONT 9, "ＭＳ Ｐゴシック", 0, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_DISPLAY,"RICHEDIT",TCS_HOTTRACK | TCS_VERTICAL | 
+                    TCS_RAGGEDRIGHT | TCS_FOCUSONBUTTONDOWN | 
+                    TCS_MULTISELECT | WS_BORDER | WS_VSCROLL | WS_HSCROLL | 
+                    WS_TABSTOP,0,0,192,132
+    EDITTEXT        IDC_MES,0,132,192,18,ES_MULTILINE | ES_AUTOVSCROLL | 
+                    ES_AUTOHSCROLL | ES_WANTRETURN,WS_EX_DLGMODALFRAME
+END
+
+IDD_FILTER DIALOG  0, 0, 234, 85
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "カラーフィルタ係数"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,180,65,45,15
+    LTEXT           "R = ",IDC_STATIC,5,5,14,8
+    EDITTEXT        IDC_RR,40,5,20,12,ES_AUTOHSCROLL
+    LTEXT           "( R *",IDC_STATIC,20,5,16,8
+    LTEXT           "+ G *",IDC_STATIC,65,5,17,8
+    EDITTEXT        IDC_RG,85,5,20,12,ES_AUTOHSCROLL
+    LTEXT           "+ B *",IDC_STATIC,110,5,17,8
+    EDITTEXT        IDC_RB,130,5,20,12,ES_AUTOHSCROLL
+    LTEXT           ") / ",IDC_STATIC,155,5,11,8
+    EDITTEXT        IDC_RDIV,170,5,20,12,ES_AUTOHSCROLL
+    LTEXT           "+",IDC_STATIC,195,5,8,8
+    EDITTEXT        IDC_RDEF,205,5,20,12,ES_AUTOHSCROLL
+    LTEXT           "G = ",IDC_STATIC,5,25,14,8
+    EDITTEXT        IDC_GR,40,25,20,12,ES_AUTOHSCROLL
+    LTEXT           "( R *",IDC_STATIC,20,25,16,8
+    LTEXT           "+ G *",IDC_STATIC,65,25,17,8
+    EDITTEXT        IDC_GG,85,25,20,12,ES_AUTOHSCROLL
+    LTEXT           "+ B *",IDC_STATIC,110,25,17,8
+    EDITTEXT        IDC_GB,130,25,20,12,ES_AUTOHSCROLL
+    LTEXT           ") / ",IDC_STATIC,155,25,11,8
+    EDITTEXT        IDC_GDIV,170,25,20,12,ES_AUTOHSCROLL
+    LTEXT           "+",IDC_STATIC,195,25,8,8
+    EDITTEXT        IDC_GDEF,205,25,20,12,ES_AUTOHSCROLL
+    LTEXT           "B = ",IDC_STATIC,5,45,14,8
+    EDITTEXT        IDC_BR,40,45,20,12,ES_AUTOHSCROLL
+    LTEXT           "( R *",IDC_STATIC,20,45,16,8
+    LTEXT           "+ G *",IDC_STATIC,65,45,17,8
+    EDITTEXT        IDC_BG,85,45,20,12,ES_AUTOHSCROLL
+    LTEXT           "+ B *",IDC_STATIC,110,45,17,8
+    EDITTEXT        IDC_BB,130,45,20,12,ES_AUTOHSCROLL
+    LTEXT           ") / ",IDC_STATIC,155,45,11,8
+    EDITTEXT        IDC_BDIV,170,45,20,12,ES_AUTOHSCROLL
+    LTEXT           "+",IDC_STATIC,195,45,8,8
+    EDITTEXT        IDC_BDEF,205,45,20,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "ノーマル",IDC_REAL,10,65,45,15
+    PUSHBUTTON      "LCD特性",IDC_LCD,60,65,45,15
+END
+
+IDD_CHEAT DIALOG  0, 0, 183, 115
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "チート入力専用"
+MENU IDR_CHEAT_MENU
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,130,95,45,15
+    CONTROL         "List5",IDC_LIST,"SysListView32",LVS_REPORT | 
+                    LVS_SINGLESEL | LVS_EDITLABELS | WS_BORDER | WS_TABSTOP,
+                    5,5,175,80
+    PUSHBUTTON      "追加",IDC_ADD,30,95,45,15
+    PUSHBUTTON      "削除",IDC_DELETE,80,95,46,16
+END
+
+IDD_CHEAT_INPUT DIALOG  0, 0, 119, 59
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "チートコード入力"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,5,40,50,14
+    PUSHBUTTON      "ｷｬﾝｾﾙ",IDCANCEL,60,40,50,14
+    LTEXT           "コード ：",IDC_STATIC,5,5,24,8
+    LTEXT           "名前：",IDC_STATIC,5,20,18,8
+    EDITTEXT        IDC_CODE,35,5,50,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_NAME,35,20,80,12,ES_AUTOHSCROLL
+END
+
+IDD_TEXTVIEW DIALOG  0, 0, 254, 279
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "テキストビューワ"
+FONT 9, "ＭＳ Ｐゴシック"
+BEGIN
+    CONTROL         "",IDC_VIEWHELP,"RICHEDIT",TCS_HOTTRACK | TCS_VERTICAL | 
+                    TCS_RAGGEDRIGHT | TCS_FOCUSONBUTTONDOWN | 
+                    TCS_MULTISELECT | WS_BORDER | WS_VSCROLL | WS_HSCROLL | 
+                    WS_TABSTOP,0,0,254,279
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_VERSION, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 122
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 53
+    END
+
+    IDD_LOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 3
+        RIGHTMARGIN, 183
+        TOPMARGIN, 3
+        BOTTOMMARGIN, 153
+    END
+
+    IDD_KEY, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 251
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 142
+    END
+
+    IDD_SPEED, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 192
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 128
+    END
+
+    IDD_CONNECT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 136
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 202
+    END
+
+    IDD_SOUND, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 92
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 152
+    END
+
+    IDD_KOROKORO, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 116
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 158
+    END
+
+    IDD_PAR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 252
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 338
+    END
+
+    IDD_MEM_DUMP, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 250
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 125
+    END
+
+    IDD_DIRECTORY, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 207
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 62
+    END
+
+    IDD_CLOCK, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 156
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 38
+    END
+
+    IDD_CHAT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 186
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 143
+    END
+
+    IDD_FILTER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 227
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 78
+    END
+
+    IDD_CHEAT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 176
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 108
+    END
+
+    IDD_CHEAT_INPUT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 112
+        TOPMARGIN, 6
+        BOTTOMMARGIN, 52
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 0,8,3,1
+ PRODUCTVERSION 0,8,3,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041104b0"
+        BEGIN
+            VALUE "Comments", "Game Boy / Game Boy COLOR Emulator"
+            VALUE "CompanyName", "T's Emulator Laboratry Inc."
+            VALUE "FileDescription", "TGB Dual"
+            VALUE "FileVersion", "0, 8, 3, 1"
+            VALUE "InternalName", "TGB_Dual"
+            VALUE "LegalCopyright", "Copyright (C) Hii 2000-2004"
+            VALUE "LegalTrademarks", "TGB Dual (R)"
+            VALUE "OriginalFilename", "TGB_Dual.exe"
+            VALUE "ProductName", "Yet Another ""TGB Dual"" ..."
+            VALUE "ProductVersion", "0, 8, 3, 1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x411, 1200
+    END
+END
+
+#endif    // 日本語 resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
