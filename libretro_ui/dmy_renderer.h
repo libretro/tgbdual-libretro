@@ -28,8 +28,6 @@ public:
 	virtual void reset() {}
 	virtual word get_sensor(bool x_y) { return 0; }
 	virtual void output_log(char *mes,...) {}
-	virtual byte get_time(int type) { return 0; }
-	virtual void set_time(int type,byte dat) {}
 	virtual void set_bibrate(bool bibrate) {}
 
 	virtual void render_screen(byte *buf,int width,int height,int depth);
@@ -37,7 +35,10 @@ public:
 	virtual word unmap_color(word gb_col);
 	virtual int check_pad();
 	virtual void refresh();
+	virtual byte get_time(int type);
+	virtual void set_time(int type,byte dat);
 
+	dword fixed_time;
 private:
-	int key_state;
+	int cur_time;
 };

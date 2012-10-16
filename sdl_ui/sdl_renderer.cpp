@@ -355,7 +355,7 @@ void sdl_renderer::uninit_sdlvideo()
 
 void sdl_renderer::release_surface()
 {
-	// ややこしい…
+	// ややこしい… // Confusing...
 	if (dpy) {
 		SDL_FreeSurface(scr);
 	}
