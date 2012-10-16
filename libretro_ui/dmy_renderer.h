@@ -22,7 +22,7 @@
 class dmy_renderer : public renderer
 {
 public:
-	dmy_renderer();
+	dmy_renderer(int which);
 	~dmy_renderer();
 
 	virtual void reset() {}
@@ -41,4 +41,5 @@ public:
 	dword fixed_time;
 private:
 	int cur_time;
+	int which_gb;
 };

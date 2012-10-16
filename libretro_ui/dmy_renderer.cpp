@@ -22,6 +22,8 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
+
 #include "dmy_renderer.h"
 #include "../gb_core/gb.h"
 #include "libretro.h"
@@ -35,8 +37,9 @@ extern retro_input_state_t input_state_cb;
 
 #define SAMPLES_PER_FRAME (44100/60)
 
-dmy_renderer::dmy_renderer()
+dmy_renderer::dmy_renderer(int which)
 {
+	which_gb = which;
 }
 
 dmy_renderer::~dmy_renderer()
@@ -54,11 +57,10 @@ word dmy_renderer::unmap_color(word gb_col)
 }
 
 void dmy_renderer::refresh() {
+	fixed_time = time(NULL);
 	int16_t stream[SAMPLES_PER_FRAME*2];
-	if (g_gb[0]) {
-		//this.snd_render = g_gb[0]->get_apu()->get_renderer();
+	if (which_gb == 0) {
 		this->snd_render->render(stream, SAMPLES_PER_FRAME);
-		//printf("audio_batch(%x, %d)\n", stream, SAMPLES_PER_FRAME);
 		audio_batch_cb(stream, SAMPLES_PER_FRAME);
 	}
 	input_poll_cb();
@@ -68,19 +70,20 @@ int dmy_renderer::check_pad()
 {
 	// a,b,select,start,down,up,left,right
 	return
-	(!!input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_A)     ) << 0 |
-	(!!input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_B)     ) << 1 |
-	(!!input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_SELECT)) << 2 |
-	(!!input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_START) ) << 3 |
-	(!!input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_DOWN)  ) << 4 |
-	(!!input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_UP)    ) << 5 |
-	(!!input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_LEFT)  ) << 6 |
-	(!!input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_RIGHT) ) << 7;
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_A)     ) << 0 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_B)     ) << 1 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_SELECT)) << 2 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_START) ) << 3 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_DOWN)  ) << 4 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_UP)    ) << 5 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_LEFT)  ) << 6 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_RIGHT) ) << 7;
 }
 
 void dmy_renderer::render_screen(byte *buf,int width,int height,int depth) {
-	//printf("video_cb(%x, %d, %d, %d)\n", buf, width, height, 256*(depth+7)/8);
-	video_cb(buf, width, height, width*((depth+7)/8));
+	if(which_gb == 0) {
+		video_cb(buf, width, height, width*((depth+7)/8));
+	}
 }
 
 byte dmy_renderer::get_time(int type)

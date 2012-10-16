@@ -1,12 +1,12 @@
-#define _GNU_SOURCE // for fopencookie hack in serialize_size
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1 // for fopencookie hack in serialize_size
+#endif
+
 #include <stdio.h>
 
 #include "libretro.h"
 #include "../gb_core/gb.h"
 #include "dmy_renderer.h"
-
-static struct retro_system_info _info;
-static struct retro_system_av_info _avinfo;
 
 gb *g_gb[2];
 dmy_renderer *render[2];
@@ -20,7 +20,7 @@ retro_input_state_t input_state_cb;
 
 static int _serialize_size = 0;
 
-
+#define _BOTH_GB_ for(int i=0; i<2; ++i) if(g_gb[i])
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -34,8 +34,9 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 {
 	info->timing.fps = 60.0f;
 	info->timing.sample_rate = 44100.0f;
-	info->geometry.base_width = _avinfo.geometry.max_width = 160;
-	info->geometry.base_height = _avinfo.geometry.max_height = 144;
+	info->geometry.base_width = info->geometry.max_width = 160;
+	info->geometry.base_height = info->geometry.max_height = 144;
+	//info.geometry.max_height *= 2; // TODO: for dual gameboy mode
 	info->geometry.aspect_ratio = 10.0 / 9.0;
 }
 
@@ -43,7 +44,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 void retro_init(void)
 {
-	g_gb[0] = g_gb[1] = NULL;
+	g_gb[0]   = g_gb[1]   = NULL;
 	render[0] = render[1] = NULL;
 }
 
@@ -54,7 +55,7 @@ void retro_deinit(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-	render[0] = new dmy_renderer();
+	render[0] = new dmy_renderer(0);
 	g_gb[0] = new gb(render[0], true, true);
 	g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0);
 	_serialize_size = 0;
@@ -63,18 +64,20 @@ bool retro_load_game(const struct retro_game_info *info)
 
 void retro_unload_game(void)
 {
-	delete g_gb[0];
-	delete render[0];
+	_BOTH_GB_ {
+		delete g_gb[i];   g_gb[i] = NULL;
+		delete render[i]; render[i] = NULL;
+	}
 }
 
 void retro_reset(void)
 {
-	g_gb[0]->reset();
+	_BOTH_GB_ g_gb[i]->reset();
 }
 
 void retro_run(void)
 {
-	g_gb[0]->run(); //render[0]->refresh(); is apparently redundant
+	_BOTH_GB_ g_gb[i]->run(); // TODO: update rtc?
 }
 
 
@@ -86,10 +89,17 @@ void *retro_get_memory_data(unsigned id)
 		case RETRO_MEMORY_RTC:        return &(render[0]->fixed_time);
 		case RETRO_MEMORY_VIDEO_RAM:  return g_gb[0]->get_cpu()->get_vram();
 		case RETRO_MEMORY_SYSTEM_RAM: return g_gb[0]->get_cpu()->get_ram();
+		case RETRO_MEMORY_SNES_GAME_BOY_RAM:
+			if(g_gb[1]) return g_gb[1]->get_rom()->get_sram();
+			break;
+		case RETRO_MEMORY_SNES_GAME_BOY_RTC:
+			if(render[1]) return &(render[1]->fixed_time);
+			break;
 		default: break;
 	}
 	return NULL;
 }
+
 size_t retro_get_memory_size(unsigned id)
 {
 	switch(id) {
@@ -97,6 +107,12 @@ size_t retro_get_memory_size(unsigned id)
 		case RETRO_MEMORY_RTC:      return sizeof(render[0]->fixed_time);
 		case RETRO_MEMORY_VIDEO_RAM:  return 0x2000*2; //sizeof(cpu::vram);
 		case RETRO_MEMORY_SYSTEM_RAM: return 0x2000*4; //sizeof(cpu::ram);
+		case RETRO_MEMORY_SNES_GAME_BOY_RAM:
+			if(g_gb[1]) return g_gb[1]->get_rom()->get_sram_size();
+			break;
+		case RETRO_MEMORY_SNES_GAME_BOY_RTC:
+			if(render[1]) return sizeof(render[1]->fixed_time);
+			break;
 		default: break;
 	}
 	return 0;
@@ -125,6 +141,8 @@ static cookie_io_functions_t cookie_io = {
 	.close = cookie_close,
 };
 
+// note: we only save for g_gb[0].
+// open question: would saving both into the same file be desirable ever?
 size_t retro_serialize_size(void)
 {
 	if (!_serialize_size) {
@@ -152,7 +170,7 @@ bool retro_unserialize(const void *data_, size_t size)
 
 void retro_cheat_reset(void)
 {
-	g_gb[0]->get_cheat()->clear();
+	_BOTH_GB_ g_gb[i]->get_cheat()->clear();
 }
 void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {
