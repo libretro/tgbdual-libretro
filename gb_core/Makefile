@@ -1,5 +1,5 @@
 
-CFLAGS = -O2 -fPIC
+CFLAGS = -O3 -fPIC
 CXXFLAGS = $(CFLAGS)
 
 SOURCES = $(wildcard *.cpp)

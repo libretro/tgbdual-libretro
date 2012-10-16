@@ -25,8 +25,8 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-	info->timing.fps = 60.0;
-	info->timing.sample_rate = 44100.0;
+	info->timing.fps = 60.0f;
+	info->timing.sample_rate = 44100.0f;
 	info->geometry.base_width = _avinfo.geometry.max_width = 160;
 	info->geometry.base_height = _avinfo.geometry.max_height = 144;
 	info->geometry.aspect_ratio = 10.0 / 9.0;
