@@ -132,7 +132,6 @@ size_t retro_serialize_size(void)
 		g_gb[0]->save_state(fcookie);
 		fclose(fcookie);
 	}
-	printf("%d\n", _serialize_size);
 	return _serialize_size;
 }
 bool retro_serialize(void *data_, size_t size)
