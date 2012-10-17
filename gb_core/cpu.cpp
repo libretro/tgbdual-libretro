@@ -280,21 +280,21 @@ byte cpu::io_read(word adr)
 		return ref_gb->get_regs()->WX;
 
 		//以下カラーでの追加 // Adding color below // TODO: continue translation
-	case 0xFF4D://KEY1システムクロック変更
+	case 0xFF4D://KEY1システムクロック変更 // KEY1 change system clock
 		return (speed?0x80:(ref_gb->get_cregs()->KEY1&1)?1:0x7E);
-	case 0xFF4F://VBK(内部VRAMバンク切り替え)
+	case 0xFF4F://VBK(内部VRAMバンク切り替え) // VBK (Internal bank switching VRAM)
 		return ref_gb->get_cregs()->VBK;
-	case 0xFF51://HDMA1(転送元上位)
+	case 0xFF51://HDMA1(転送元上位) // HDMA (upper source)
 		return dma_src>>8;
-	case 0xFF52://HDMA2(転送元下位)
+	case 0xFF52://HDMA2(転送元下位) // HDMA (lower source)
 		return dma_src&0xff;
-	case 0xFF53://HDMA3(転送先上位)
+	case 0xFF53://HDMA3(転送先上位) // HDMA3 (upper destination)
 		return dma_dest>>8;
-	case 0xFF54://HDMA4(転送先下位)
+	case 0xFF54://HDMA4(転送先下位) // HDMA4 (lower destination)
 		return dma_dest&0xff;
-	case 0xFF55://HDMA5(転送実行)
+	case 0xFF55://HDMA5(転送実行) // HDMA5 (run forward)
 		return (dma_executing?((dma_rest-1)&0x7f):0xFF);
-	case 0xFF56://RP(赤外線)
+	case 0xFF56://RP(赤外線) // RP (infrared)
 		if (ref_gb->get_target()){
 			if ((ref_gb->get_cregs()->RP&0xC0)==0xC0){
 				dword *que=ref_gb->get_target()->get_cpu()->rp_que;
@@ -313,7 +313,7 @@ byte cpu::io_read(word adr)
 			}
 		}
 		else{
-			if (ref_gb->hook_ext){ // フックします
+			if (ref_gb->hook_ext){ // フックします // Hook
 				if ((ref_gb->get_cregs()->RP&0xC0)==0xC0)
 					return (ref_gb->get_cregs()->RP&1)|(ref_gb->hook_proc.led()?2:0)|0xC0;
 				else
@@ -322,9 +322,9 @@ byte cpu::io_read(word adr)
 			else
 				return (ref_gb->get_cregs()->RP&0xC1);
 		}
-	case 0xFF68://BCPS(BGパレット書き込み指定)
+	case 0xFF68://BCPS(BGパレット書き込み指定) // BG write palette
 		return ref_gb->get_cregs()->BCPS;
-	case 0xFF69://BCPD(BGパレット書きこみデータ)
+	case 0xFF69://BCPD(BGパレット書きこみデータ) // BG palette data written
 		if (ref_gb->get_cregs()->BCPS&1)
 			ret=ref_gb->get_lcd()->get_pal((ref_gb->get_cregs()->BCPS>>3)&7)[(ref_gb->get_cregs()->BCPS>>1)&3]>>8;
 		else
@@ -333,11 +333,11 @@ byte cpu::io_read(word adr)
 			ret=ref_gb->get_renderer()->unmap_color(ref_gb->get_lcd()->get_pal((ref_gb->get_cregs()->BCPS>>3)&7)[(ref_gb->get_cregs()->BCPS>>1)&3])>>8;
 		else
 			ret=ref_gb->get_renderer()->unmap_color(ref_gb->get_lcd()->get_pal((ref_gb->get_cregs()->BCPS>>3)&7)[(ref_gb->get_cregs()->BCPS>>1)&3])&0xff;
-*/		//ポインタはインクリメントされない(おじゃる丸)
+*/		//ポインタはインクリメントされない(おじゃる丸) // pointer is not incremented (Round Ojaru)
 		return ret;
-	case 0xFF6A://OCPS(OBJパレット書きこみ指定)
+	case 0xFF6A://OCPS(OBJパレット書きこみ指定) // OBJ palette specified written
 		return ref_gb->get_cregs()->OCPS;
-	case 0xFF6B://OCPD(OBJパレット書きこみデータ)
+	case 0xFF6B://OCPD(OBJパレット書きこみデータ) // Write data OBJ palette
 		if (ref_gb->get_cregs()->OCPS&1)
 			ret=ref_gb->get_lcd()->get_pal(((ref_gb->get_cregs()->OCPS>>3)&7)+8)[(ref_gb->get_cregs()->OCPS>>1)&3]>>8;
 		else
@@ -347,10 +347,10 @@ byte cpu::io_read(word adr)
 		else
 			ret=ref_gb->get_renderer()->unmap_color(ref_gb->get_lcd()->get_pal(((ref_gb->get_cregs()->OCPS>>3)&7)+8)[(ref_gb->get_cregs()->OCPS>>1)&3])&0xff;
 */		return ret;
-	case 0xFF70://SVBK(内部RAMバンク切り替え)
+	case 0xFF70://SVBK(内部RAMバンク切り替え) // Internal RAM bank switching
 		return ref_gb->get_cregs()->SVBK;
 
-	case 0xFFFF://IE(割りこみマスク)
+	case 0xFFFF://IE(割りこみマスク) // Interrupt Mask
 		return ref_gb->get_regs()->IE;
 
 	// undocumented register
@@ -382,47 +382,47 @@ byte cpu::io_read(word adr)
 void cpu::io_write(word adr,byte dat)
 {
 		switch(adr){
-		case 0xFF00://P1(パッド制御)
+		case 0xFF00://P1(パッド制御) // P1 (control pad)
 			ref_gb->get_regs()->P1=dat;
 			return;
-		case 0xFF01://SB(シリアルシリアル通信送受信)
+		case 0xFF01://SB(シリアルシリアル通信送受信) // SB (sending and receiving serial communication)
 			ref_gb->get_regs()->SB=dat;
 			return;
-		case 0xFF02://SC(コントロール)
+		case 0xFF02://SC(コントロール) // SC (control)
 			if (ref_gb->get_rom()->get_info()->gb_type==1){
 				ref_gb->get_regs()->SC=dat&0x81;
-				if ((dat&0x80)&&(dat&1)) // 送信開始
+				if ((dat&0x80)&&(dat&1)) // 送信開始 // Transmission start
 					seri_occer=total_clock+512;
 			}
-			else{ // GBCでの拡張
+			else{ // GBCでの拡張 // Enhancements in GBC
 				ref_gb->get_regs()->SC=dat&0x83;
-				if ((dat&0x80)&&(dat&1)) // 送信開始
+				if ((dat&0x80)&&(dat&1)) // 送信開始 // Transmission start
 					if (dat&2)
-						seri_occer=total_clock+512*8/32; // 転送速度通常の32倍
+						seri_occer=total_clock+512*8/32; // 転送速度通常の32倍 // 32 times the normal transfer rate
 					else
 						seri_occer=total_clock+512*8;
 			}
 			return;
-		case 0xFF04://DIV(ディバイダー)
+		case 0xFF04://DIV(ディバイダー) // DIV (divider)
 			ref_gb->get_regs()->DIV=0;
 			return;
-		case 0xFF05://TIMA(タイマカウンタ)
+		case 0xFF05://TIMA(タイマカウンタ) // TIMA (timer counter)
 			ref_gb->get_regs()->TIMA=dat;
 //			sys_clock=0;
 			return;
-		case 0xFF06://TMA(タイマ調整)
+		case 0xFF06://TMA(タイマ調整) // TMA (adjustment timer)
 			ref_gb->get_regs()->TMA=dat;
 //			sys_clock=0;
 			return;
-		case 0xFF07://TAC(タイマコントロール)
+		case 0xFF07://TAC(タイマコントロール) // TAC (timer control)
 			if ((dat&0x04)&&!(ref_gb->get_regs()->TAC&0x04))
 				sys_clock=0;
 			ref_gb->get_regs()->TAC=dat;
 			return;
-		case 0xFF0F://IF(割りこみフラグ)
+		case 0xFF0F://IF(割りこみフラグ) // IF (Interrupt flag)
 			ref_gb->get_regs()->IF=dat;
 			return;
-		case 0xFF40://LCDC(LCDコントロール)
+		case 0xFF40://LCDC(LCDコントロール) // LCDC (LCD control)
 			if ((dat&0x80)&&(!(ref_gb->get_regs()->LCDC&0x80))){
 				ref_gb->get_regs()->LY=0;
 				ref_gb->get_lcd()->clear_win_count();
@@ -430,27 +430,29 @@ void cpu::io_write(word adr,byte dat)
 			ref_gb->get_regs()->LCDC=dat;
 //			fprintf(file,"LCDC=%02X at line %d\n",dat,ref_gb->get_regs()->LY);
 			return;
-		case 0xFF41://STAT(LCDステータス)
-			if (ref_gb->get_rom()->get_info()->gb_type==1) // オリジナルGBにおいてこのような現象が起こるらしい
+		case 0xFF41://STAT(LCDステータス) // STAT (LCD status)
+			if (ref_gb->get_rom()->get_info()->gb_type==1)
+				// オリジナルGBにおいてこのような現象が起こるらしい
+				// This phenomenon seems to occur in the original GB
 				if (!(ref_gb->get_regs()->STAT&0x02))
 					ref_gb->get_regs()->IF|=INT_LCDC;
 
 			ref_gb->get_regs()->STAT=(ref_gb->get_regs()->STAT&0x7)|(dat&0x78);
 			return;
-		case 0xFF42://SCY(スクロールY)
+		case 0xFF42://SCY(スクロールY) // SCY (scroll Y)
 			ref_gb->get_regs()->SCY=dat;
 			return;
-		case 0xFF43://SCX(スクロールX)
+		case 0xFF43://SCX(スクロールX) // SCX (scroll X)
 			ref_gb->get_regs()->SCX=dat;
 			return;
-		case 0xFF44://LY(LCDC Y座標)
+		case 0xFF44://LY(LCDC Y座標) // LY (LCDC Y coordinate)
 //			ref_gb->get_regs()->LY=0;
 			ref_gb->get_lcd()->clear_win_count();
 			return;
-		case 0xFF45://LYC(LY比較)
+		case 0xFF45://LYC(LY比較) // LYC (compare LY)
 			ref_gb->get_regs()->LYC=dat;
 			return;
-		case 0xFF46://DMA(DMA転送)
+		case 0xFF46://DMA(DMA転送) // DMA (DMA transfer)
 			switch(dat>>5){
 			case 0:
 			case 1:
@@ -482,51 +484,51 @@ void cpu::io_write(word adr,byte dat)
 				break;
 			}
 			return;
-		case 0xFF47://BGP(背景パレット)
+		case 0xFF47://BGP(背景パレット) // BGP (background palette)
 			ref_gb->get_regs()->BGP=dat;
 			return;
-		case 0xFF48://OBP1(オブジェクトパレット1)
+		case 0xFF48://OBP1(オブジェクトパレット1) // OBP1 (object palette 1)
 			ref_gb->get_regs()->OBP1=dat;
 			return;
-		case 0xFF49://OBP2(オブジェクトパレット2)
+		case 0xFF49://OBP2(オブジェクトパレット2) // OBP2 (object palette 2)
 			ref_gb->get_regs()->OBP2=dat;
 			return;
-		case 0xFF4A://WY(ウインドウY座標)
+		case 0xFF4A://WY(ウインドウY座標) // WY (window coordinates Y)
 			ref_gb->get_regs()->WY=dat;
 			return;
-		case 0xFF4B://WX(ウインドウX座標)
+		case 0xFF4B://WX(ウインドウX座標) // WX (window coordinates X)
 			ref_gb->get_regs()->WX=dat;
 			return;
 
-			//以下カラーでの追加
-		case 0xFF4D://KEY1システムクロック変更
+			//以下カラーでの追加 // Add color below
+		case 0xFF4D://KEY1システムクロック変更 // KEY1 change system clock
 //			speed=dat&1;
 			ref_gb->get_cregs()->KEY1=dat&1;
 			speed_change=dat&1;
 			return;
-		case 0xFF4F://VBK(内部VRAMバンク切り替え)
+		case 0xFF4F://VBK(内部VRAMバンク切り替え) // VBK (VRAM internal bank switching)
 			if (dma_executing)
 				return;
 			vram_bank=vram+0x2000*(dat&0x01);
 			ref_gb->get_cregs()->VBK=dat;//&0x01;
 			return;
-		case 0xFF51://HDMA1(転送元上位)
+		case 0xFF51://HDMA1(転送元上位) // HDMA1 (upper source)
 			dma_src&=0x00F0;
 			dma_src|=(dat<<8);
 			return;
-		case 0xFF52://HDMA2(転送元下位)
+		case 0xFF52://HDMA2(転送元下位) // HDMA2 (lower source)
 			dma_src&=0xFF00;
 			dma_src|=(dat&0xF0);
 			return;
-		case 0xFF53://HDMA3(転送先上位)
+		case 0xFF53://HDMA3(転送先上位) // HDMA3 (upper destination)
 			dma_dest&=0x00F0;
 			dma_dest|=((dat&0xFF)<<8);
 			return;
-		case 0xFF54://HDMA4(転送先下位)
+		case 0xFF54://HDMA4(転送先下位) // HDMA4 (lower destination)
 			dma_dest&=0xFF00;
 			dma_dest|=(dat&0xF0);
 			return;
-		case 0xFF55://HDMA5(転送実行)
+		case 0xFF55://HDMA5(転送実行) // HDMA5 (run forward)
 			word tmp_adr;
 			tmp_adr=0x8000+(dma_dest&0x1ff0);
 //			fprintf(file,"%03d : %04X -> %04X  %d byte %s\n",ref_gb->get_regs()->LY,dma_src,dma_dest,((dat&0x7f)+1)*16,(dat&0x80)?"delay":"immidiately");
@@ -534,7 +536,7 @@ void cpu::io_write(word adr,byte dat)
 				ref_gb->get_cregs()->HDMA5=0;
 				return;
 			}
-			if (dat&0x80){ //HBlank毎
+			if (dat&0x80){ //HBlank毎 // Every HBlank
 				if (dma_executing){
 					dma_executing=false;
 					dma_rest=0;
@@ -558,7 +560,7 @@ void cpu::io_write(word adr,byte dat)
 					dma_src_bank=ram_bank-0xD000;
 				else dma_src_bank=NULL;
 */			}
-			else{ //通常DMA
+			else{ //通常DMA // Normal DMA
 				if (dma_executing){
 					dma_executing=false;
 					dma_rest=0;
@@ -567,6 +569,7 @@ void cpu::io_write(word adr,byte dat)
 					return;
 				}
 				// どうやら､HBlank以外ならいつでもOKみたいだ
+				// Apparently, it seems OK except HBlank anytime
 //				if (!(((ref_gb->get_regs()->STAT&3)==1)||(!(ref_gb->get_regs()->LCDC&0x80)))){
 //					ref_gb->get_cregs()->HDMA5=0;
 //					return;
@@ -602,19 +605,19 @@ void cpu::io_write(word adr,byte dat)
 				dma_src+=((dat&0x7F)+1)*16;
 				dma_dest+=((dat&0x7F)+1)*16;
 
-				gdma_rest=456*2+((dat&0x7f)+1)*32*(speed?2:1); // CPU パワーを占領
+				gdma_rest=456*2+((dat&0x7f)+1)*32*(speed?2:1); // CPU パワーを占領 // Occupied the CPU power
 			}
 			return;
-		case 0xFF56://RP(赤外線)
+		case 0xFF56://RP(赤外線) // RP (infrared)
 //			fprintf(file,"RP=%02X\n",dat);
 			rp_que[que_cur++]=(((dword)dat)<<16)|((word)rest_clock);
 			rp_que[que_cur]=0x00000000;
 			ref_gb->get_cregs()->RP=dat;
 			return;
-		case 0xFF68://BCPS(BGパレット書き込み指定)
+		case 0xFF68://BCPS(BGパレット書き込み指定) // BCPS (write BG palette)
 			ref_gb->get_cregs()->BCPS=dat;
 			return;
-		case 0xFF69://BCPD(BGパレット書きこみデータ xBBBBBGG GGGRRRRR)
+		case 0xFF69://BCPD(BGパレット書きこみデータ xBBBBBGG GGGRRRRR) // (write BG palette data xBBBBBGG GGGRRRR)
 			if (ref_gb->get_cregs()->BCPS&1){
 				ref_gb->get_lcd()->get_pal((ref_gb->get_cregs()->BCPS>>3)&7)[(ref_gb->get_cregs()->BCPS>>1)&3]=
 				(ref_gb->get_lcd()->get_pal((ref_gb->get_cregs()->BCPS>>3)&7)[(ref_gb->get_cregs()->BCPS>>1)&3]&0xff)|(dat<<8);
@@ -638,10 +641,10 @@ void cpu::io_write(word adr,byte dat)
 				ref_gb->get_cregs()->BCPS=0x80|((ref_gb->get_cregs()->BCPS+1)&0x3f);
 //			fprintf(file,"%d :BCPS = %02X\n",ref_gb->get_regs()->LY,dat);
 			return;
-		case 0xFF6A://OCPS(OBJパレット書きこみ指定)
+		case 0xFF6A://OCPS(OBJパレット書きこみ指定) // OCPS (Specify write OBJ palette)
 			ref_gb->get_cregs()->OCPS=dat;
 			return;
-		case 0xFF6B://OCPD(OBJパレット書きこみデータ)
+		case 0xFF6B://OCPD(OBJパレット書きこみデータ) // OCPD (Write data OBJ palette)
 			if (ref_gb->get_cregs()->OCPS&1){
 				ref_gb->get_lcd()->get_pal(((ref_gb->get_cregs()->OCPS>>3)&7)+8)[(ref_gb->get_cregs()->OCPS>>1)&3]=
 				(ref_gb->get_lcd()->get_pal(((ref_gb->get_cregs()->OCPS>>3)&7)+8)[(ref_gb->get_cregs()->OCPS>>1)&3]&0xff)|(dat<<8);
@@ -664,7 +667,7 @@ void cpu::io_write(word adr,byte dat)
 			if (ref_gb->get_cregs()->OCPS&0x80)
 				ref_gb->get_cregs()->OCPS=0x80|((ref_gb->get_cregs()->OCPS+1)&0x3f);
 			return;
-		case 0xFF70://SVBK(内部RAMバンク切り替え)
+		case 0xFF70://SVBK(内部RAMバンク切り替え) // SVBK (RAM internal bank switching)
 //			if (dma_executing)
 //				return;
 
@@ -673,7 +676,7 @@ void cpu::io_write(word adr,byte dat)
 			ram_bank=ram+0x1000*dat;
 			return;
 
-		case 0xFFFF://IE(割りこみマスク)
+		case 0xFFFF://IE(割りこみマスク) // IE (Interrupt mask)
 			ref_gb->get_regs()->IE=dat;
 //			ref_gb->get_regs()->IF=0;
 //			fprintf(file,"IE = %02X\n",dat);
@@ -863,7 +866,7 @@ void cpu::irq_process()
 		return;
 	}
 
-	if ((ref_gb->get_regs()->IF&ref_gb->get_regs()->IE)&&(regs.I||halt)){//割りこみがかかる時
+	if ((ref_gb->get_regs()->IF&ref_gb->get_regs()->IE)&&(regs.I||halt)){//割りこみがかかる時 // Time-consuming interrupt
 		if (halt)
 			regs.PC++;
 		write(regs.SP-2,regs.PC&0xFF);write(regs.SP-1,(regs.PC>>8));regs.SP-=2;

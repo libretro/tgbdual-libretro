@@ -23,13 +23,13 @@
 #pragma pack(4)
 
 struct gbr_procs{
-	void(*load)(unsigned char*,int); // 読み込み
-	void(*unload)(); // 解放 (忘れるとメモリリークが起こります)
-	void(*run)(); // CPUを走らせる(456*154クロック)
-	void(*render)(short*,int); // メモリに波形を書き込みます
-	void(*select)(int); // 選曲します
-	void(*enable)(int,int); // チャンネルのOn/Offを変更します
-	void(*effect)(int,int); // エフェクタのOn/Offを変更します
+	void(*load)(unsigned char*,int); // 読み込み // Read
+	void(*unload)(); // 解放 (忘れるとメモリリークが起こります) // Release (A memory leak occurs when you forget)
+	void(*run)(); // CPUを走らせる(456*154クロック) // Run the CPU (456 * 154 clocks)
+	void(*render)(short*,int); // メモリに波形を書き込みます // write the waveform memory
+	void(*select)(int); // 選曲します // track selection
+	void(*enable)(int,int); // チャンネルのOn/Offを変更します // turn channel On/Off
+	void(*effect)(int,int); // エフェクタのOn/Offを変更します // turn effect On/Off
 };
 
 #pragma pack(pop,gbr_procs_pack)
