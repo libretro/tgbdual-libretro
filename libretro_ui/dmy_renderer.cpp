@@ -93,13 +93,23 @@ int dmy_renderer::check_pad()
 void dmy_renderer::render_screen(byte *buf,int width,int height,int depth) {
 	static byte joined_buf[160*144*2*2]; // two screens' worth of 16-bit data
 	const int half = sizeof(joined_buf)/2;
+	int pitch = width*((depth+7)/8);
 	if(g_gb[1]) { // are we running two gb's?
+		#ifdef VERTICAL
 		memcpy(joined_buf + which_gb*half, buf, half);
 		if(which_gb == 1) {
-			video_cb(joined_buf, width, height*2, width*((depth+7)/8));
+			video_cb(joined_buf, width, height*2, pitch);
 		}
+		#else
+		for (int row = 0; row < height; ++row) {
+			memcpy(joined_buf + pitch*(2*row + which_gb), buf+pitch*row, pitch);
+		}
+		if(which_gb == 1) {
+			video_cb(joined_buf, width*2, height, pitch*2);
+		}
+		#endif
 	} else {
-		video_cb(buf, width, height, width*((depth+7)/8));
+		video_cb(buf, width, height, pitch);
 	}
 }
 

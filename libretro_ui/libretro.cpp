@@ -33,7 +33,12 @@ void retro_get_system_info(struct retro_system_info *info)
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
 	int w = 160, h = 144;
-	if (g_gb[1]) h *= 2; // for dual gameboy mode
+	if (g_gb[1])  // for dual gameboy mode
+	#ifdef VERTICAL
+		h *= 2;
+	#else
+		w *= 2;
+	#endif
 	info->timing.fps = 60.0f;
 	info->timing.sample_rate = 44100.0f;
 	info->geometry.base_width = info->geometry.max_width = w;
@@ -91,12 +96,20 @@ void *retro_get_memory_data(unsigned id)
 		case RETRO_MEMORY_RTC:        return &(render[0]->fixed_time);
 		case RETRO_MEMORY_VIDEO_RAM:  return g_gb[0]->get_cpu()->get_vram();
 		case RETRO_MEMORY_SYSTEM_RAM: return g_gb[0]->get_cpu()->get_ram();
+		// for dual GB support.
+		case RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM:
+			if(g_gb[0]) return g_gb[0]->get_rom()->get_sram();
+			break;
+		case RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM:
+			if(g_gb[1]) return g_gb[1]->get_rom()->get_sram();
+			break;
+		/* SGB was the initial attempt for dual-cart support.
 		case RETRO_MEMORY_SNES_GAME_BOY_RAM:
 			if(g_gb[1]) return g_gb[1]->get_rom()->get_sram();
 			break;
 		case RETRO_MEMORY_SNES_GAME_BOY_RTC:
 			if(render[1]) return &(render[1]->fixed_time);
-			break;
+			break;*/
 		default: break;
 	}
 	return NULL;
@@ -109,12 +122,20 @@ size_t retro_get_memory_size(unsigned id)
 		case RETRO_MEMORY_RTC:      return sizeof(render[0]->fixed_time);
 		case RETRO_MEMORY_VIDEO_RAM:  return 0x2000*2; //sizeof(cpu::vram);
 		case RETRO_MEMORY_SYSTEM_RAM: return 0x2000*4; //sizeof(cpu::ram);
+		// for dual GB support.
+		case RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM:
+			if(g_gb[0]) return g_gb[0]->get_rom()->get_sram_size();
+			break;
+		case RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM:
+			if(g_gb[1]) return g_gb[1]->get_rom()->get_sram_size();
+			break;
+		/* SGB was the initial attempt for dual GB support.
 		case RETRO_MEMORY_SNES_GAME_BOY_RAM:
 			if(g_gb[1]) return g_gb[1]->get_rom()->get_sram_size();
 			break;
 		case RETRO_MEMORY_SNES_GAME_BOY_RTC:
 			if(render[1]) return sizeof(render[1]->fixed_time);
-			break;
+			break; */
 		default: break;
 	}
 	return 0;
@@ -173,23 +194,27 @@ bool retro_unserialize(const void *data_, size_t size)
 
 bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num)
 {
-	if( !(type == RETRO_GAME_TYPE_SUPER_GAME_BOY && num == 2) ) {
+	/* Originally used RETRO_GAME_TYPE_SUPER_GAME_BOY (num == 2), but then
+	   both games don't have their SRAM loaded/saved by retroarch.
+	   Would've been nice, for RTC support, but it doesn't save for the
+	   base cartridge (g_gb[0] here), just the "actual" GB cartridge (g_gb[1]).
+	 */
+	if( !(type == RETRO_GAME_TYPE_SUFAMI_TURBO && num == 3) ) {
+		printf("Invalid load_game_special type: %x, %d\n", type, num);
+		for (int i = 0; i < num; ++i) puts(info[i].path);
+		puts("Load either a single normal GB/GBC game,");
+		puts(" or load two GB/GBC games as slot A and B of 'Sufami Turbo'");
+		puts(" (pick some dummy file for the BIOS, it won't be used)");
 		return false;
 	}
+	++info; // skip the "base cart"
 	retro_load_game(&info[0]);
 	render[1] = new dmy_renderer(1);
 	g_gb[1] = new gb(render[1], true, true);
 	g_gb[1]->load_rom((byte*)info[1].data, info[1].size, NULL, 0);
-	// TODO: figure out how to hook up ext ports and IR LEDs
-	/* 
-	struct ext_hook {
-		byte (*send)(byte);
-		bool (*led)(void);
-	};
-
-	g_gb[0].hook_extport( ? )
-	cpu::seri_send ?
-	 */
+	// for link cables and IR:
+	g_gb[0]->set_target(g_gb[1]);
+	g_gb[1]->set_target(g_gb[0]);
 	return true;
 }
 
