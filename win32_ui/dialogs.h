@@ -2179,7 +2179,7 @@ static void add_cheat_list(HWND list,char *code,char *name,bool add=true,bool en
 		cheat_dat tmp_dat;
 		cheat_dat *tmp=&tmp_dat;
 
-		for (i=0;i<len;i++){//大文字に
+		for (i=0;i<len;i++){//大文字に // To uppercase
 			if (islower(buf[i])){
 				buf[i]=toupper(buf[i]);
 			}
