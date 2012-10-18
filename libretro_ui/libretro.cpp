@@ -18,7 +18,7 @@ retro_audio_sample_batch_t audio_batch_cb;
 retro_input_poll_t input_poll_cb;
 retro_input_state_t input_state_cb;
 
-static int _serialize_size = 0;
+static size_t _serialize_size[2] = { 0, 0 };
 
 #define _BOTH_GB_ for(int i=0; i<2; ++i) if(g_gb[i])
 
@@ -65,7 +65,7 @@ bool retro_load_game(const struct retro_game_info *info)
 	render[0] = new dmy_renderer(0);
 	g_gb[0] = new gb(render[0], true, true);
 	g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0);
-	_serialize_size = 0;
+	_serialize_size[0] = _serialize_size[1] = 0;
 	return true;
 }
 
@@ -143,51 +143,40 @@ size_t retro_get_memory_size(unsigned id)
 
 
 
-// "counter" pseudo-file.
-static ssize_t cookie_read(void *cookie, char *buf, size_t size)
-{ *(int*)cookie += size; return size; }
-static ssize_t cookie_write(void *cookie, const char *buf, size_t size)
-{ *(int*)cookie += size; return size; }
-static int cookie_seek(void *cookie, off64_t *offset, int whence)
-{
-	if (whence == SEEK_SET) { *(int*)cookie = *offset; }
-	else if (whence == SEEK_CUR) { *(int*)cookie += *offset; }
-	else { return -1; }
-	return 0;
-}
-static int cookie_close(void *cookie) { return 0; }
-
-static cookie_io_functions_t cookie_io = {
-	.read = cookie_read,
-	.write = cookie_write,
-	.seek = cookie_seek,
-	.close = cookie_close,
-};
-
 // question: would saving both gb's into the same file be desirable ever?
 // answer: yes, it's most likely needed to sync up netplay and for bsv records.
 size_t retro_serialize_size(void)
 {
-	if (!_serialize_size) {
-		FILE* fcookie = fopencookie(&_serialize_size, "wb", cookie_io);
-		_BOTH_GB_ g_gb[i]->save_state(fcookie);
-		fclose(fcookie);
+	if ( ! (_serialize_size[0] + _serialize_size[1]) ) {
+		_BOTH_GB_ _serialize_size[i] = g_gb[i]->get_state_size();
 	}
-	return _serialize_size;
+	return _serialize_size[0] + _serialize_size[1];
 }
 
-bool retro_serialize(void *data_, size_t size)
+bool retro_serialize(void *data, size_t size)
 {
-	FILE *fmem = fmemopen(data_, size, "wb");
-	_BOTH_GB_ g_gb[i]->save_state(fmem);
-	return !fclose(fmem);
+	if (size >= retro_serialize_size()) { // extra room is fine too
+		uint8_t *ptr = (uint8_t*)data;
+		_BOTH_GB_ {
+			g_gb[i]->save_state_mem(ptr);
+			ptr += _serialize_size[i];
+		}
+		return true;
+	}
+	return false;
 }
 
-bool retro_unserialize(const void *data_, size_t size)
+bool retro_unserialize(const void *data, size_t size)
 {
-	FILE *fmem = fmemopen((void*)data_, size, "rb");
-	_BOTH_GB_ g_gb[i]->restore_state(fmem);
-	return !fclose(fmem);
+	if (size >= retro_serialize_size()) { // extra data is fine too
+		uint8_t *ptr = (uint8_t*)data;
+		_BOTH_GB_ {
+			g_gb[i]->restore_state_mem(ptr);
+			ptr += _serialize_size[i];
+		}
+		return true;
+	}
+	return false;
 }
 
 
@@ -208,7 +197,7 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 		return false;
 	}
 	++info; // skip the "base cart"
-	retro_load_game(&info[0]);
+	retro_load_game(&info[0]); // NB: this resets the _serialize_size array too
 	render[1] = new dmy_renderer(1);
 	g_gb[1] = new gb(render[1], true, true);
 	g_gb[1]->load_rom((byte*)info[1].data, info[1].size, NULL, 0);

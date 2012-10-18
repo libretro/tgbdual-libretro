@@ -25,6 +25,7 @@
 
 #include "gb_types.h"
 #include "renderer.h"
+#include "serializer.h"
 
 #define INT_VBLANK 1
 #define INT_LCDC 2
@@ -185,6 +186,11 @@ public:
 	void set_skip(int frame);
 	void set_use_gba(bool use) { use_gba=use; }
 	bool load_rom(byte *buf,int size,byte *ram,int ram_size);
+
+	void serialize(serializer &s);
+	size_t get_state_size(void);
+	void save_state_mem(void *buf);
+	void restore_state_mem(void *buf);
 	void save_state(FILE *file);
 	void restore_state(FILE *file);
 

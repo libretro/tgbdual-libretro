@@ -123,236 +123,123 @@ bool gb::load_rom(byte *buf,int size,byte *ram,int ram_size)
 		return false;
 }
 
-void gb::save_state(FILE *file)
+void gb::serialize(serializer &s)
 {
-	int tbl_ram[]={1,1,1,4,16,8}; // 0と1は保険 // 0 and 1 insurance
-	int has_bat[]={0,0,0,1,0,0,1,0,0,1,0,0,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,1,0,1,1,0}; // 0x20以下 // Less than 0x20
+	int tbl_ram[]={1,1,1,4,16,8};
+	int has_bat[]={0,0,0,1,0,0,1,0,0,1,0,0,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,1,0,1,1,0};
 
-	// ゲームボーイの種類 (GB:1,SGB:2,GBC:3 …)
-	// Type of Game Boy (GB: 1, SGB: 2, GBC: 3...)
-	fwrite(&m_rom->get_info()->gb_type,sizeof(int),1,file);
+	s.process(&m_rom->get_info()->gb_type, sizeof(int));
+	bool gbc = m_rom->get_info()->gb_type >= 3; // GB: 1, SGB: 2, GBC: 3...
 
-	if (m_rom->get_info()->gb_type==1){ // normal gb
-		fwrite(m_cpu->get_ram(),1,0x2000,file); // ram
-		fwrite(m_cpu->get_vram(),1,0x2000,file); // vram
-		fwrite(m_rom->get_sram(),1,tbl_ram[m_rom->get_info()->ram_size]*0x2000,file); // sram
-		fwrite(m_cpu->get_oam(),1,0xA0,file);
-		fwrite(m_cpu->get_stack(),1,0x80,file);
+	int cpu_dat[16]; // only used when gbc is true
 
-		int page,ram_page;
-		page=(m_mbc->get_rom()-m_rom->get_rom())/0x4000;
-		ram_page=(m_mbc->get_sram()-m_rom->get_sram())/0x2000;
-
-		fwrite(&page,sizeof(int),1,file); // rom_page
-		fwrite(&ram_page,sizeof(int),1,file); // ram_page
-
-		int dmy=0;
-
-		fwrite((const void *)m_cpu->get_regs(),sizeof(cpu_regs),1,file); // cpu_reg
-		fwrite((const void *)&regs,sizeof(gb_regs),1,file);//sys_reg
-		int halt=((*m_cpu->get_halt())?1:0);
-		fwrite((const void *)&halt,sizeof(int),1,file);
-		// 元の版ではシリアル通信通信満了までのクロック数
-		// (通信の仕様が大幅に変わったためダミーで埋めている)
-		// In the original version (which is filled with dummy for the specification of communication has changed significantly) until the expiration of the number of clock communication serial communication
-		fwrite((const void *)&dmy,sizeof(int),1,file);
-		int mbc_dat=m_mbc->get_state();
-		fwrite(&mbc_dat,sizeof(int),1,file);//MBC
-
-		int ext_is=m_mbc->is_ext_ram()?1:0;
-		fwrite(&ext_is,sizeof(int),1,file);
-
-		// ver 1.1 追加 // Added ver 1.1
-		fwrite(m_apu->get_stat(),sizeof(apu_stat),1,file);
-		fwrite(m_apu->get_mem(),1,0x30,file);
-		fwrite(m_apu->get_stat_cpy(),sizeof(apu_stat),1,file);
-
-		byte resurved[256];
-		memset(resurved,0,256);
-		fwrite(resurved,1,256,file);//将来のために確保 // Reserved for future use
+	if(gbc) {
+		s.process(m_cpu->get_ram(), 0x2000*4);
+		s.process(m_cpu->get_vram(), 0x2000*2);
+	} else {
+		s.process(m_cpu->get_ram(), 0x2000);
+		s.process(m_cpu->get_vram(), 0x2000);
 	}
-	else if (m_rom->get_info()->gb_type>=3){ // GB Colour / GBA
-		fwrite(m_cpu->get_ram(),1,0x2000*4,file); // ram
-		fwrite(m_cpu->get_vram(),1,0x2000*2,file); // vram
-		fwrite(m_rom->get_sram(),1,tbl_ram[m_rom->get_info()->ram_size]*0x2000,file); // sram
-		fwrite(m_cpu->get_oam(),1,0xA0,file);
-		fwrite(m_cpu->get_stack(),1,0x80,file);
+	s.process(m_rom->get_sram(), tbl_ram[m_rom->get_info()->ram_size]*0x2000);
+	s.process(m_cpu->get_oam(), 0xA0);
+	s.process(m_cpu->get_stack(), 0x80);
 
-		int cpu_dat[16];
+	int page = (m_mbc->get_rom()-m_rom->get_rom())/0x4000;
+	int ram_page = (m_mbc->get_sram()-m_rom->get_sram())/0x2000;
+	s.process(&page, sizeof(int)); // rom_page
+	s.process(&ram_page, sizeof(int)); // ram_page
+	m_mbc->set_page(page, ram_page); // hackish, but should work.
+	// basically, if we're serializing to count or save, the set_page
+	// should have no effect assuming the calculations above are correct.
+	// tl;dr: "if it's good enough for saving, it's good enough for loading"
+
+	if(gbc) {
 		m_cpu->save_state(cpu_dat);
 
-		int page,ram_page;
-		page=(m_mbc->get_rom()-m_rom->get_rom())/0x4000;
-		ram_page=(m_mbc->get_sram()-m_rom->get_sram())/0x2000;
-
-		fwrite(&page,sizeof(int),1,file); // rom_page
-		fwrite(&ram_page,sizeof(int),1,file); // ram_page
-		fwrite(cpu_dat+0,sizeof(int),1,file);//int_page
-		fwrite(cpu_dat+1,sizeof(int),1,file);//vram_page
-
-		int dmy=0;
-
-		fwrite((const void *)m_cpu->get_regs(),sizeof(cpu_regs),1,file); // cpu_reg
-		fwrite((const void *)&regs,sizeof(gb_regs),1,file);//sys_reg
-		fwrite((const void *)&c_regs,sizeof(gbc_regs),1,file);//col_reg
-		fwrite(m_lcd->get_pal(0),sizeof(word),8*4*2,file);//palette
-		int halt=((*m_cpu->get_halt())?1:0);
-		fwrite((const void *)&halt,sizeof(int),1,file);
-		// 元の版ではシリアル通信通信満了までのクロック数
-		// In the original version of the number of clocks until the expiration communication serial communication
-		fwrite((const void *)&dmy,sizeof(int),1,file);
-
-		int mbc_dat=m_mbc->get_state();
-		fwrite(&mbc_dat,sizeof(int),1,file);//MBC
-
-		int ext_is=m_mbc->is_ext_ram()?1:0;
-		fwrite(&ext_is,sizeof(int),1,file);
-
-		//その他諸々 // Many other countries
-		fwrite(cpu_dat+2,sizeof(int),1,file);
-		fwrite(cpu_dat+3,sizeof(int),1,file);
-		fwrite(cpu_dat+4,sizeof(int),1,file);
-		fwrite(cpu_dat+5,sizeof(int),1,file);
-		fwrite(cpu_dat+6,sizeof(int),1,file);
-		fwrite(cpu_dat+7,sizeof(int),1,file);
-
-		// ver 1.1 追加 // Added ver 1.1
-		fwrite(m_apu->get_stat(),sizeof(apu_stat),1,file);
-		fwrite(m_apu->get_mem(),1,0x30,file);
-		fwrite(m_apu->get_stat_cpy(),sizeof(apu_stat),1,file);
-
-		byte resurved[256],reload=1;
-		memset(resurved,0,256);
-//		resurved[0]=1;
-		fwrite(&reload,1,1,file);
-		fwrite(resurved,1,256,file);//将来のために確保 // Reserved for future use
+		s.process(cpu_dat+0, 2*sizeof(int)); //int_page, vram_page
+		/* s.process(cpu_dat+1, sizeof(int)); ^ just serialize both in one go */
 	}
+
+	s.process(m_cpu->get_regs(), sizeof(cpu_regs)); // cpu_reg
+	s.process(&regs, sizeof(gb_regs)); //sys_reg
+
+	if(gbc) {
+		s.process(&c_regs, sizeof(gbc_regs)); //col_reg
+		s.process(m_lcd->get_pal(0), sizeof(word)*8*4*2); //palette
+	}
+
+	int halt = !! (*m_cpu->get_halt());
+	s.process(&halt, sizeof(int));
+	(*m_cpu->get_halt()) = !! halt; // same errata as above
+
+	// Originally the number of clocks until serial communication expires
+	int dmy = 0;
+	s.process(&dmy, sizeof(int));
+
+	int mbc_dat = m_mbc->get_state();
+	s.process(&mbc_dat, sizeof(int)); //MBC
+	m_mbc->set_state(mbc_dat);
+
+	int ext_is = !! m_mbc->is_ext_ram();
+	s.process(&ext_is, sizeof(int));
+	m_mbc->set_ext_is(!! ext_is);
+
+	if(gbc) {
+		// Many additional specifications
+		/* i think this is inefficient...
+		s.process(cpu_dat+2, sizeof(int));
+		s.process(cpu_dat+3, sizeof(int));
+		s.process(cpu_dat+4, sizeof(int));
+		s.process(cpu_dat+5, sizeof(int));
+		s.process(cpu_dat+6, sizeof(int));
+		s.process(cpu_dat+7, sizeof(int));
+		*/
+		s.process(cpu_dat+2, 6*sizeof(int));
+		m_cpu->restore_state(cpu_dat); // same errata as above
+	}
+
+	// Added ver 1.1
+	s.process(m_apu->get_stat(), sizeof(apu_stat));
+	s.process(m_apu->get_mem(), 0x30);
+	s.process(m_apu->get_stat_cpy(), sizeof(apu_stat));
+
+#if 0
+	byte resurved[256];
+	memset(resurved, 0, 256);
+	s.process(resurved, 256); // Reserved for future use
+#endif
+}
+
+size_t gb::get_state_size(void)
+{
+	size_t ret;
+	serializer s(&ret, serializer::COUNT);
+	serialize(s);
+	return ret;
+}
+
+void gb::save_state_mem(void *buf)
+{
+	serializer s(buf, serializer::SAVE_BUF);
+	serialize(s);
+}
+
+void gb::restore_state_mem(void *buf)
+{
+	serializer s(buf, serializer::LOAD_BUF);
+	serialize(s);
+}
+
+void gb::save_state(FILE *file)
+{
+	serializer s(file, serializer::SAVE_FILE);
+	serialize(s);
 }
 
 void gb::restore_state(FILE *file)
 {
-	int tbl_ram[]={1,1,1,4,16,8}; // 0と1は保険 // 0 and 1 insurance
-	int has_bat[]={0,0,0,1,0,0,1,0,0,1,0,0,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,1,0,1,1,0}; // 0x20以下 // Less than 0x20
-	int gb_type,dmy;
-
-	fread(&gb_type,sizeof(int),1,file);
-
-	m_rom->get_info()->gb_type=gb_type;
-
-	if (gb_type==1){
-		fread(m_cpu->get_ram(),1,0x2000,file); // ram
-		fread(m_cpu->get_vram(),1,0x2000,file); // vram
-		fread(m_rom->get_sram(),1,tbl_ram[m_rom->get_info()->ram_size]*0x2000,file); // sram
-		fread(m_cpu->get_oam(),1,0xA0,file);
-		fread(m_cpu->get_stack(),1,0x80,file);
-
-		int page,ram_page;
-		fread(&page,sizeof(int),1,file); // rom_page
-		fread(&ram_page,sizeof(int),1,file); // ram_page
-		m_mbc->set_page(page,ram_page);
-
-		fread(m_cpu->get_regs(),sizeof(cpu_regs),1,file); // cpu_reg
-		fread((void *)&regs,sizeof(gb_regs),1,file); // sys_reg
-		int halt;
-		fread(&halt,sizeof(int),1,file);
-		*m_cpu->get_halt()=((halt)?true:false);
-		fread(&dmy,sizeof(int),1,file);
-
-		int mbc_dat;
-		fread(&mbc_dat,sizeof(int),1,file); // MBC
-		m_mbc->set_state(mbc_dat);
-		int ext_is;
-		fread(&ext_is,sizeof(int),1,file);
-		m_mbc->set_ext_is(ext_is?true:false);
-
-		// ver 1.1 追加 // Added ver 1.1
-		byte tmp[256],tester[100];
-		fread(tmp,1,100,file); // とりあえず調べてみる // I'll try to find out anyway
-		memset(tester,0,100);
-		if (memcmp(tmp,tester,100)!=0){
-			// apu 部分 // apu part
-			fseek(file,-100,SEEK_CUR);
-			fread(m_apu->get_stat(),sizeof(apu_stat),1,file);
-			fread(m_apu->get_mem(),1,0x30,file);
-			fread(m_apu->get_stat_cpy(),sizeof(apu_stat),1,file);
-		}
-
-		byte resurved[256];
-		fread(resurved,1,256,file);//将来のために確保 // Reserved for future use
-	}
-	else if (gb_type>=3){ // GB Colour / GBA
-		fread(m_cpu->get_ram(),1,0x2000*4,file); // ram
-		fread(m_cpu->get_vram(),1,0x2000*2,file); // vram
-		fread(m_rom->get_sram(),1,tbl_ram[m_rom->get_info()->ram_size]*0x2000,file); // sram
-		fread(m_cpu->get_oam(),1,0xA0,file);
-		fread(m_cpu->get_stack(),1,0x80,file);
-
-		int cpu_dat[16];
-
-		int page,ram_page;
-		fread(&page,sizeof(int),1,file); // rom_page
-		fread(&ram_page,sizeof(int),1,file); // ram_page
-		m_mbc->set_page(page,ram_page);
-		page=(m_mbc->get_rom()-m_rom->get_rom())/0x4000;
-		ram_page=(m_mbc->get_sram()-m_rom->get_sram())/0x2000;
-
-		fread(cpu_dat+0,sizeof(int),1,file);//int_page
-		fread(cpu_dat+1,sizeof(int),1,file);//vram_page
-
-		int dmy;
-		fread(m_cpu->get_regs(),sizeof(cpu_regs),1,file); // cpu_reg
-		fread(&regs,sizeof(gb_regs),1,file);//sys_reg
-		fread(&c_regs,sizeof(gbc_regs),1,file);//col_reg
-		fread(m_lcd->get_pal(0),sizeof(word),8*4*2,file);//palette
-		int halt;
-		fread(&halt,sizeof(int),1,file);
-		*m_cpu->get_halt()=(halt?true:false);
-		// 元の版ではシリアル通信通信満了までのクロック数
-		// In the original version of the number of clocks until the expiration communication serial communication
-		fread(&dmy,sizeof(int),1,file);
-
-		int mbc_dat;
-		fread(&mbc_dat,sizeof(int),1,file); // MBC
-		m_mbc->set_state(mbc_dat);
-		int ext_is;
-		fread(&ext_is,sizeof(int),1,file);
-		m_mbc->set_ext_is(ext_is?true:false);
-
-		//その他諸々 // Many other countries
-		fread(cpu_dat+2,sizeof(int),1,file);
-		fread(cpu_dat+3,sizeof(int),1,file);
-		fread(cpu_dat+4,sizeof(int),1,file);
-		fread(cpu_dat+5,sizeof(int),1,file);
-		fread(cpu_dat+6,sizeof(int),1,file);
-		fread(cpu_dat+7,sizeof(int),1,file);
-		m_cpu->restore_state(cpu_dat);
-
-		// ver 1.1 追加 // Added ver 1.1
-		byte tmp[256],tester[100];
-		fread(tmp,1,100,file); // とりあえず調べてみる // I'll try to find out anyway
-		memset(tester,0,100);
-		if (memcmp(tmp,tester,100)!=0){
-			// apu 部分
-			fseek(file,-100,SEEK_CUR);
-			fread(m_apu->get_stat(),sizeof(apu_stat),1,file);
-			fread(m_apu->get_mem(),1,0x30,file);
-			fread(m_apu->get_stat_cpy(),sizeof(apu_stat),1,file);
-
-			fread(tmp,1,1,file);
-			int i;
-			if (tmp[0])
-				for (i=0;i<64;i++)
-					m_lcd->get_mapped_pal(i>>2)[i&3]=m_renderer->map_color(m_lcd->get_pal(i>>2)[i&3]);
-			else{
-				for (i=0;i<64;i++)
-					m_lcd->get_pal(i>>2)[i&3]=m_renderer->unmap_color(m_lcd->get_pal(i>>2)[i&3]);
-				for (i=0;i<64;i++)
-					m_lcd->get_mapped_pal(i>>2)[i&3]=m_renderer->map_color(m_lcd->get_pal(i>>2)[i&3]);
-			}
-		}
-		byte resurved[256];
-		fread(resurved,1,256,file);//将来のために確保 // Reserved for future use
-	}
+	serializer s(file, serializer::LOAD_FILE);
+	serialize(s);
 }
 
 void gb::refresh_pal()
