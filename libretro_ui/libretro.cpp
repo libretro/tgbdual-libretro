@@ -19,6 +19,7 @@ retro_input_poll_t input_poll_cb;
 retro_input_state_t input_state_cb;
 
 static size_t _serialize_size[2] = { 0, 0 };
+extern bool _screen_2p_vertical;
 
 #define _BOTH_GB_ for(int i=0; i<2; ++i) if(g_gb[i])
 
@@ -33,12 +34,14 @@ void retro_get_system_info(struct retro_system_info *info)
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
 	int w = 160, h = 144;
-	if (g_gb[1])  // for dual gameboy mode
-	#ifdef VERTICAL
-		h *= 2;
-	#else
-		w *= 2;
-	#endif
+	if (g_gb[1]) {
+		// screen orientation for dual gameboy mode
+		if(_screen_2p_vertical) {
+			h *= 2;
+		} else {
+			w *= 2;
+		}
+	}
 	info->timing.fps = 60.0f;
 	info->timing.sample_rate = 44100.0f;
 	info->geometry.base_width = info->geometry.max_width = w;

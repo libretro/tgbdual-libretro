@@ -39,6 +39,8 @@ extern retro_environment_t environ_cb;
 #define MSG_FRAMES 60
 #define SAMPLES_PER_FRAME (44100/60)
 
+bool _screen_2p_vertical = false;
+
 static inline bool button_pressed(int pad, int btn) {
 	static bool held[16] = {
 		false, false, false, false, false, false, false, false,
@@ -88,6 +90,11 @@ void dmy_renderer::refresh() {
 	if (which_gb == 0) {
 		// only once per frame, even in dual gb mode.
 		input_poll_cb();
+		/* this isn't enough to make retroarch change resolutions on the fly,
+		   even if the values returned by get_system_av_info change as well.
+		if ( button_pressed(0, RETRO_DEVICE_ID_JOYPAD_X) ) {
+			_screen_2p_vertical = ! _screen_2p_vertical;
+		}*/
 	}
 
 	if (g_gb[1]) { // if dual gb mode
@@ -148,19 +155,19 @@ void dmy_renderer::render_screen(byte *buf,int width,int height,int depth) {
 	const int half = sizeof(joined_buf)/2;
 	int pitch = width*((depth+7)/8);
 	if(g_gb[1]) { // are we running two gb's?
-		#ifdef VERTICAL
-		memcpy(joined_buf + which_gb*half, buf, half);
-		if(which_gb == 1) {
-			video_cb(joined_buf, width, height*2, pitch);
+		if(_screen_2p_vertical) {
+			memcpy(joined_buf + which_gb*half, buf, half);
+			if(which_gb == 1) {
+				video_cb(joined_buf, width, height*2, pitch);
+			}
+		} else {
+			for (int row = 0; row < height; ++row) {
+				memcpy(joined_buf + pitch*(2*row + which_gb), buf+pitch*row, pitch);
+			}
+			if(which_gb == 1) {
+				video_cb(joined_buf, width*2, height, pitch*2);
+			}
 		}
-		#else
-		for (int row = 0; row < height; ++row) {
-			memcpy(joined_buf + pitch*(2*row + which_gb), buf+pitch*row, pitch);
-		}
-		if(which_gb == 1) {
-			video_cb(joined_buf, width*2, height, pitch*2);
-		}
-		#endif
 	} else {
 		video_cb(buf, width, height, pitch);
 	}
