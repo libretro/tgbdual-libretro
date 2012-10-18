@@ -123,6 +123,9 @@ bool gb::load_rom(byte *buf,int size,byte *ram,int ram_size)
 		return false;
 }
 
+// TODO: optimize some of this for size and getter/setter call overhead?
+// some booleans here are being serialized as ints, etc...
+// maybe reorganize some of it too, like serializing all of cpu_dat at once.
 void gb::serialize(serializer &s)
 {
 	int tbl_ram[]={1,1,1,4,16,8};

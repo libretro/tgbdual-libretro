@@ -14,7 +14,7 @@ dmy_renderer *render[2];
 retro_video_refresh_t video_cb;
 //retro_audio_sample_t audio_cb;
 retro_audio_sample_batch_t audio_batch_cb;
-//retro_environment_t environ_cb;
+retro_environment_t environ_cb;
 retro_input_poll_t input_poll_cb;
 retro_input_state_t input_state_cb;
 
@@ -271,11 +271,11 @@ unsigned retro_get_region(void) { return RETRO_REGION_NTSC; }
 
 void retro_set_controller_port_device(unsigned port, unsigned device) { }
 
-void retro_set_environment(retro_environment_t cb) { /*environ_cb = cb;*/ }
+void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { /*audio_cb = cb;*/ }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
-void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
+void retro_set_environment(retro_environment_t cb) { environ_cb = cb; }
 
 // end boilerplate

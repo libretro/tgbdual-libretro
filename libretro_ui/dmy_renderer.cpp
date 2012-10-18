@@ -34,6 +34,7 @@ extern retro_video_refresh_t video_cb;
 extern retro_audio_sample_batch_t audio_batch_cb;
 extern retro_input_poll_t input_poll_cb;
 extern retro_input_state_t input_state_cb;
+extern retro_environment_t environ_cb;
 
 #define SAMPLES_PER_FRAME (44100/60)
 
@@ -57,23 +58,53 @@ word dmy_renderer::unmap_color(word gb_col)
 }
 
 void dmy_renderer::refresh() {
-	fixed_time = time(NULL);
 	static int16_t stream[SAMPLES_PER_FRAME*2];
-	if (g_gb[1]) { // if dual gb mode, mix down to one per channel
-		int16_t tmp_stream[SAMPLES_PER_FRAME*2];
-		this->snd_render->render(tmp_stream, SAMPLES_PER_FRAME);
-		for(int i = 0; i < SAMPLES_PER_FRAME; ++i) {
-			int l = tmp_stream[(i*2)+0], r = tmp_stream[(i*2)+1];
-			stream[(i*2)+which_gb] = int16_t( (l+r) / 2 );
+
+	static int audio_2p_mode = 2;
+	struct retro_message audio_2p_mode_descriptions[] = {
+		{ "Audio: only playing P1", 10 },
+		{ "Audio: only playing P2", 10 },
+		{ "Audio: P1 left, P2 right", 10 },
+		{ "Audio: silence", 10 },
+	};
+
+	if (g_gb[1]) { // if dual gb mode
+		if (audio_2p_mode == 2) { // mix down to one per channel
+			int16_t tmp_stream[SAMPLES_PER_FRAME*2];
+			this->snd_render->render(tmp_stream, SAMPLES_PER_FRAME);
+			for(int i = 0; i < SAMPLES_PER_FRAME; ++i) {
+				int l = tmp_stream[(i*2)+0], r = tmp_stream[(i*2)+1];
+				stream[(i*2)+which_gb] = int16_t( (l+r) / 2 );
+			}
+		} else if (audio_2p_mode == which_gb) {
+			this->snd_render->render(stream, SAMPLES_PER_FRAME);
 		}
-		if (which_gb == 1) {
+		if (which_gb == 1) { // only callback after both gb's are processed.
 			audio_batch_cb(stream, SAMPLES_PER_FRAME);
+			// switch the playback mode with L1/R1/L2/R2 buttons on P1 pad.
+			if ( input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_L) ) {
+				audio_2p_mode = 0;
+			} else if ( input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_R) ) {
+				audio_2p_mode = 1;
+			} else if ( input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_L2) ) {
+				audio_2p_mode = 2;
+			} else if ( input_state_cb(0,1,0, RETRO_DEVICE_ID_JOYPAD_R2) ) {
+				audio_2p_mode = 3;
+				memset(stream, 0, sizeof(stream));
+			} else {
+				goto no_message;
+			}
+			environ_cb( RETRO_ENVIRONMENT_SET_MESSAGE,
+			            &audio_2p_mode_descriptions[audio_2p_mode] );
+			no_message:
+			;
 		}
 	} else {
 		this->snd_render->render(stream, SAMPLES_PER_FRAME);
 		audio_batch_cb(stream, SAMPLES_PER_FRAME);
 	}
 	input_poll_cb();
+	fixed_time = time(NULL);
 }
 
 int dmy_renderer::check_pad()
