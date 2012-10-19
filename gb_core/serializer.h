@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 
+// convenience macros for common uses
+#define s_ARRAY(a) s.process((a), sizeof(a))
+#define s_VAR(v) s.process(&(v), sizeof(v))
+
 // short and simple serializing to buffer / file / thin air.
 // inspired by the much nicer one found in bsnes.
 class serializer
@@ -19,7 +23,7 @@ public:
 	{
 		switch(my_mode) {
 			case COUNT:
-				*(my_target.counter) += size;
+				my_target.counter[0] += size;
 				return size;
 			case SAVE_BUF:
 				memcpy(my_target.buf, data, size);
@@ -33,6 +37,9 @@ public:
 				return fwrite(data, 1, size, my_target.file);
 			case LOAD_FILE:
 				return fread(data, 1, size, my_target.file);
+			default:
+				puts("ERROR: invalid serializer!");
+				break;
 		}
 		return 0;
 	}

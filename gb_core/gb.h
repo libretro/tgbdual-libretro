@@ -188,6 +188,7 @@ public:
 	bool load_rom(byte *buf,int size,byte *ram,int ram_size);
 
 	void serialize(serializer &s);
+	void serialize_firstrev(serializer &s);
 	void serialize_legacy(serializer &s);
 
 	size_t get_state_size(void);
@@ -282,6 +283,7 @@ public:
 
 	int get_sprite_count() { return sprite_count; };
 
+	void serialize(serializer &s);
 private:
 	void bg_render(void *buf,int scanline);
 	void win_render(void *buf,int scanline);
@@ -325,6 +327,7 @@ public:
 	void update();
 	void reset();
 
+	void serialize(serializer &s);
 private:
 	gb *ref_gb;
 	apu_snd *snd;
@@ -348,6 +351,7 @@ public:
 	void render(short *buf,int sample);
 	void reset();
 
+	void serialize(serializer &s);
 private:
 	void process(word adr,byte dat);
 	void update();
@@ -391,6 +395,7 @@ public:
 	void ext_write(word adr,byte dat);
 	void reset();
 
+	void serialize(serializer &s);
 private:
 	void mbc1_write(word adr,byte dat);
 	void mbc2_write(word adr,byte dat);
@@ -457,6 +462,7 @@ public:
 
 	bool load_rom(byte *buf,int size,byte *ram,int ram_size);
 
+	void serialize(serializer &s);
 private:
 	gb *ref_gb;
 	rom_info info;
@@ -510,6 +516,7 @@ public:
 	void save_state_ex(int *dat);
 	void restore_state_ex(int *dat);
 
+	void serialize(serializer &s);
 private:
 	byte inline io_read(word adr);
 	void inline io_write(word adr,byte dat);

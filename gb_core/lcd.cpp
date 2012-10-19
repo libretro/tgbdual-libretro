@@ -778,3 +778,19 @@ void lcd::render(void *buf,int scanline)
 		}
 	}
 }
+
+void lcd::serialize(serializer &s)
+{
+	s_ARRAY(m_pal16);
+	s_ARRAY(m_pal32);
+	s_ARRAY(col_pal); // the only one that was in the original state format.
+	s_ARRAY(mapped_pal);
+	s_VAR(trans_count);
+	s_ARRAY(trans_tbl);
+	s_ARRAY(priority_tbl);
+	s_VAR(now_win_line);
+	s_VAR(mul);
+	s_VAR(sprite_count);
+	s_ARRAY(layer_enable);
+}
+

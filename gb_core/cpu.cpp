@@ -1001,3 +1001,48 @@ void cpu::exec(int clocks)
 		}
 	}
 }
+
+void cpu::serialize(serializer &s)
+{
+	int tmp;
+
+	tmp = ( ram_bank- ram)/0x1000; s_VAR(tmp);  ram_bank =  ram + tmp*0x1000;
+	tmp = (vram_bank-vram)/0x2000; s_VAR(tmp); vram_bank = vram + tmp*0x2000;
+
+	s_VAR(regs);
+
+	// TODO: consider putting a case for pre-GBC mode,
+	//       where sizeof(ram) == sizeof(vram) == 0x2000, to save space?
+	//       downside: variable savestate size.
+	s_ARRAY(ram);
+	s_ARRAY(vram);
+	s_ARRAY(stack);
+	s_ARRAY(oam);
+
+	// these next four weren't originally in the save state
+	s_ARRAY(spare_oam);
+	s_ARRAY(ext_mem);
+	s_ARRAY(rp_que);
+	s_VAR(que_cur);
+
+	s_VAR(total_clock);
+	s_VAR(rest_clock);
+	s_VAR(sys_clock);
+	s_VAR(div_clock);
+	s_VAR(seri_occer); // nor was this
+
+	s_VAR(halt);
+	s_VAR(speed);
+	s_VAR(speed_change);
+	s_VAR(dma_executing);
+
+	s_VAR(dma_src);
+	s_VAR(dma_dest);
+	s_VAR(dma_rest);
+	s_VAR(gdma_rest); // or these
+	s_VAR(b_dma_first); // two.
+
+	// undocumented registers:
+	s_VAR(_ff6c); s_VAR(_ff72); s_VAR(_ff73); s_VAR(_ff74); s_VAR(_ff75);
+}
+

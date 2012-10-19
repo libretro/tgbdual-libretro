@@ -18,7 +18,7 @@
 */
 
 //-----------------------------------------------
-// ROMイメージ管理部 (含SRAM)
+// ROMイメージ管理部 (含SRAM) // ROM image management unit (SRAM included)
 
 #include "gb.h"
 #include <stdlib.h>
@@ -100,3 +100,10 @@ bool rom::load_rom(byte *buf,int size,byte *ram,int ram_size)
 
 	return true;
 }
+
+void rom::serialize(serializer &s)
+{
+	s_VAR(info);
+	s.process(sram, get_sram_size());
+}
+

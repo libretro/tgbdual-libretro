@@ -695,3 +695,18 @@ void apu_snd::render(short *buf,int sample)
 	memcpy(&stat_cpy,&stat,sizeof(stat));
 	memcpy(&stat,&stat_tmp,sizeof(stat));
 }
+
+void apu::serialize(serializer &s) { snd->serialize(s); }
+void apu_snd::serialize(serializer &s)
+{
+	// originally, the only things saved were stat, stat_cpy,
+	// and the first 0x30 bytes of mem.
+	s_VAR(stat);
+	s_VAR(stat_cpy);
+	s_ARRAY(mem);
+
+	s_VAR(bef_clock);
+	s_VAR(b_echo);
+	s_VAR(b_lowpass);
+}
+

@@ -213,7 +213,7 @@ void gb::serialize_legacy(serializer &s)
 
 
 // TODO: put 'serialize' in other classes (cpu, mbc, ...) and call it from here.
-void gb::serialize(serializer &s)
+void gb::serialize_firstrev(serializer &s)
 {
 	int tbl_ram[]={1,1,1,4,16,8};
 	int has_bat[]={0,0,0,1,0,0,1,0,0,1,0,0,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,1,0,1,1,0};
@@ -275,9 +275,21 @@ void gb::serialize(serializer &s)
 	s.process(m_apu->get_stat_cpy(), sizeof(apu_stat));
 }
 
+void gb::serialize(serializer &s)
+{
+	s_VAR(regs);
+	s_VAR(c_regs);
+
+	m_rom->serialize(s);
+	m_cpu->serialize(s);
+	m_mbc->serialize(s);
+	m_lcd->serialize(s);
+	m_apu->serialize(s);
+}
+
 size_t gb::get_state_size(void)
 {
-	size_t ret;
+	size_t ret = 0;
 	serializer s(&ret, serializer::COUNT);
 	serialize(s);
 	return ret;

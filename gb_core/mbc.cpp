@@ -785,3 +785,35 @@ void mbc::mmm01_write(word adr,byte dat)
 		}
 	}
 }
+
+
+void mbc::serialize(serializer &s)
+{
+	byte*  rom = ref_gb->get_rom()->get_rom();
+	byte* sram = ref_gb->get_rom()->get_sram();
+
+	int tmp;
+
+	tmp = ( rom_page- rom)/0x4000; s_VAR(tmp);  rom_page =  rom + tmp*0x4000;
+	tmp = (sram_page-sram)/0x2000; s_VAR(tmp); sram_page = sram + tmp*0x2000;
+
+	tmp = get_state(); s_VAR(tmp); set_state(tmp);
+
+	s_VAR(ext_is_ram);
+
+	// all of the below were originally not in the save state format.
+	s_VAR(mbc1_16_8);  s_VAR(mbc1_dat);
+
+	s_VAR(mbc3_latch); s_VAR(mbc3_sec);  s_VAR(mbc3_min); s_VAR(mbc3_hour);
+	s_VAR(mbc3_dayl);  s_VAR(mbc3_dayh); s_VAR(mbc3_timer);
+
+	s_VAR(mbc5_dat);
+
+	s_VAR(mbc7_write_enable);
+	s_VAR(mbc7_idle);  s_VAR(mbc7_cs);   s_VAR(mbc7_sk);  s_VAR(mbc7_op_code);
+	s_VAR(mbc7_adr);   s_VAR(mbc7_dat);  s_VAR(mbc7_ret); s_VAR(mbc7_state);
+	s_VAR(mbc7_buf);   s_VAR(mbc7_count);
+
+	s_VAR(huc1_16_8);  s_VAR(huc1_dat);
+}
+
