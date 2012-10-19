@@ -188,6 +188,8 @@ public:
 	bool load_rom(byte *buf,int size,byte *ram,int ram_size);
 
 	void serialize(serializer &s);
+	void serialize_legacy(serializer &s);
+
 	size_t get_state_size(void);
 	void save_state_mem(void *buf);
 	void restore_state_mem(void *buf);
