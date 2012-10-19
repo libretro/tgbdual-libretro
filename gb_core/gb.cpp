@@ -123,10 +123,8 @@ bool gb::load_rom(byte *buf,int size,byte *ram,int ram_size)
 		return false;
 }
 
-// TODO: optimize some of this for size and getter/setter call overhead?
-// some booleans here are being serialized as ints, etc...
-// maybe reorganize some of it too, like serializing all of cpu_dat at once.
-void gb::serialize(serializer &s)
+// savestate format matching the original TGB dual, pre-libretro port
+void gb::serialize_legacy(serializer &s)
 {
 	int tbl_ram[]={1,1,1,4,16,8};
 	int has_bat[]={0,0,0,1,0,0,1,0,0,1,0,0,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,1,0,1,1,0};
@@ -147,11 +145,11 @@ void gb::serialize(serializer &s)
 	s.process(m_cpu->get_oam(), 0xA0);
 	s.process(m_cpu->get_stack(), 0x80);
 
-	int page = (m_mbc->get_rom()-m_rom->get_rom())/0x4000;
+	int rom_page = (m_mbc->get_rom()-m_rom->get_rom())/0x4000;
 	int ram_page = (m_mbc->get_sram()-m_rom->get_sram())/0x2000;
-	s.process(&page, sizeof(int)); // rom_page
-	s.process(&ram_page, sizeof(int)); // ram_page
-	m_mbc->set_page(page, ram_page); // hackish, but should work.
+	s.process(&rom_page, sizeof(int));
+	s.process(&ram_page, sizeof(int));
+	m_mbc->set_page(rom_page, ram_page); // hackish, but should work.
 	// basically, if we're serializing to count or save, the set_page
 	// should have no effect assuming the calculations above are correct.
 	// tl;dr: "if it's good enough for saving, it's good enough for loading"
@@ -191,10 +189,12 @@ void gb::serialize(serializer &s)
 		// Many additional specifications
 		/* i think this is inefficient...
 		s.process(cpu_dat+2, sizeof(int));
+
 		s.process(cpu_dat+3, sizeof(int));
 		s.process(cpu_dat+4, sizeof(int));
 		s.process(cpu_dat+5, sizeof(int));
 		s.process(cpu_dat+6, sizeof(int));
+
 		s.process(cpu_dat+7, sizeof(int));
 		*/
 		s.process(cpu_dat+2, 6*sizeof(int));
@@ -206,11 +206,73 @@ void gb::serialize(serializer &s)
 	s.process(m_apu->get_mem(), 0x30);
 	s.process(m_apu->get_stat_cpy(), sizeof(apu_stat));
 
-#if 0
 	byte resurved[256];
 	memset(resurved, 0, 256);
 	s.process(resurved, 256); // Reserved for future use
-#endif
+}
+
+
+// TODO: put 'serialize' in other classes (cpu, mbc, ...) and call it from here.
+void gb::serialize(serializer &s)
+{
+	int tbl_ram[]={1,1,1,4,16,8};
+	int has_bat[]={0,0,0,1,0,0,1,0,0,1,0,0,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,1,0,1,1,0};
+
+	s.process(&m_rom->get_info()->gb_type, sizeof(int));
+	bool gbc = m_rom->get_info()->gb_type >= 3; // GB: 1, SGB: 2, GBC: 3...
+
+	int cpu_dat[16];
+
+	if(gbc) {
+		s.process(m_cpu->get_ram(), 0x2000*4);
+		s.process(m_cpu->get_vram(), 0x2000*2);
+	} else {
+		s.process(m_cpu->get_ram(), 0x2000);
+		s.process(m_cpu->get_vram(), 0x2000);
+	}
+	s.process(m_rom->get_sram(), tbl_ram[m_rom->get_info()->ram_size]*0x2000);
+	s.process(m_cpu->get_oam(), 0xA0);
+	s.process(m_cpu->get_stack(), 0x80);
+
+	int rom_page = (m_mbc->get_rom() - m_rom->get_rom()) / 0x4000;
+	int ram_page = (m_mbc->get_sram() - m_rom->get_sram()) / 0x2000;
+	s.process(&rom_page, sizeof(int)); // rom_page
+	s.process(&ram_page, sizeof(int)); // ram_page
+	m_mbc->set_page(rom_page, ram_page); // hackish, but should work.
+	// basically, if we're serializing to count or save, the set_page
+	// should have no effect assuming the calculations above are correct.
+	// tl;dr: "if it's good enough for saving, it's good enough for loading"
+
+	if(true || gbc) { // why not for normal gb as well?
+		m_cpu->save_state(cpu_dat);
+		m_cpu->save_state_ex(cpu_dat+8);
+		s.process(cpu_dat, 12*sizeof(int));
+		m_cpu->restore_state(cpu_dat);      // same errata as above
+		m_cpu->restore_state_ex(cpu_dat+8);
+	}
+
+	s.process(m_cpu->get_regs(), sizeof(cpu_regs)); // cpu_reg
+	s.process(&regs, sizeof(gb_regs)); //sys_reg
+
+	if(gbc) {
+		s.process(&c_regs, sizeof(gbc_regs)); //col_reg
+		s.process(m_lcd->get_pal(0), sizeof(word)*8*4*2); //palette
+	}
+
+	s.process(m_cpu->get_halt(), sizeof(bool));
+
+	int mbc_dat = m_mbc->get_state();
+	s.process(&mbc_dat, sizeof(int)); //MBC
+	m_mbc->set_state(mbc_dat);
+
+	bool ext_is = m_mbc->is_ext_ram();
+	s.process(&ext_is, sizeof(bool));
+	m_mbc->set_ext_is(ext_is);
+
+	// Added ver 1.1
+	s.process(m_apu->get_stat(), sizeof(apu_stat));
+	s.process(m_apu->get_mem(), 0x30);
+	s.process(m_apu->get_stat_cpy(), sizeof(apu_stat));
 }
 
 size_t gb::get_state_size(void)
