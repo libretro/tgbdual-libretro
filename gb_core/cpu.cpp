@@ -1011,11 +1011,13 @@ void cpu::serialize(serializer &s)
 
 	s_VAR(regs);
 
-	// TODO: consider putting a case for pre-GBC mode,
-	//       where sizeof(ram) == sizeof(vram) == 0x2000, to save space?
-	//       downside: variable savestate size.
-	s_ARRAY(ram);
-	s_ARRAY(vram);
+	if (ref_gb->get_rom()->get_info()->gb_type >= 3) { // GB: 1, SGB: 2, GBC: 3...
+		s_ARRAY(ram);
+		s_ARRAY(vram);
+	} else {
+		s.process(ram, 0x2000);
+		s.process(vram,0x2000);
+	}
 	s_ARRAY(stack);
 	s_ARRAY(oam);
 
