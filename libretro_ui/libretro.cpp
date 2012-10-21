@@ -87,6 +87,7 @@ void retro_reset(void)
 
 void retro_run(void)
 {
+	input_poll_cb();
 	_BOTH_GB_ g_gb[i]->run();
 }
 

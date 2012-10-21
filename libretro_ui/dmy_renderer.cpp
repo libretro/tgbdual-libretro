@@ -108,16 +108,6 @@ void dmy_renderer::refresh() {
 		{ "Audio: silence",           MSG_FRAMES },
 	};
 
-	if (which_gb == 0) {
-		// only once per frame, even in dual gb mode.
-		input_poll_cb();
-		/* this isn't enough to make retroarch change resolutions on the fly,
-		   even if the values returned by get_system_av_info change as well.
-		if ( button_pressed(0, RETRO_DEVICE_ID_JOYPAD_X) ) {
-			_screen_2p_vertical = ! _screen_2p_vertical;
-		}*/
-	}
-
 	if (g_gb[1]) { // if dual gb mode
 		if (audio_2p_mode == 2) {
 			// mix down to one per channel (dual mono)
@@ -135,6 +125,13 @@ void dmy_renderer::refresh() {
 			// only do audio callback after both gb's are rendered.
 			audio_batch_cb(stream, SAMPLES_PER_FRAME);
 
+			/*
+			// switch screen orientation with X button
+			// this isn't enough to make retroarch change resolutions on the fly,
+			// even if the values returned by get_system_av_info change as well.
+			if ( button_pressed(0, RETRO_DEVICE_ID_JOYPAD_X) ) {
+				_screen_2p_vertical = ! _screen_2p_vertical;
+			}*/
 			// switch the playback mode with L/R
 			if ( button_pressed(0, RETRO_DEVICE_ID_JOYPAD_L) ) {
 				--audio_2p_mode;
