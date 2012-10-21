@@ -60,6 +60,12 @@ static inline bool button_pressed(int pad, int btn) {
 dmy_renderer::dmy_renderer(int which)
 {
 	which_gb = which;
+
+	retro_pixel_format pixfmt = RETRO_PIXEL_FORMAT_RGB565;
+	rgb565 = environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixfmt);
+	if (rgb565) {
+		puts("Frontend supports RGB565; will use that instead of XRGB1555.");
+	}
 }
 
 dmy_renderer::~dmy_renderer()
@@ -68,12 +74,27 @@ dmy_renderer::~dmy_renderer()
 
 word dmy_renderer::map_color(word gb_col)
 {
-	return ((gb_col&0x1F)<<10)|(gb_col&0x3e0)|((gb_col&0x7c00)>>10);
+	if(rgb565) {
+		return ((gb_col&0x001f) << 11) |
+		       ((gb_col&0x03e0) <<  1) |
+		       ((gb_col&0x0200) >>  4) |
+		       ((gb_col&0x7c00) >> 10);
+	}
+	return ((gb_col&0x001f) << 10) |
+	       ((gb_col&0x03e0)      ) | 
+	       ((gb_col&0x7c00) >> 10);
 }
 
 word dmy_renderer::unmap_color(word gb_col)
 {
-	return ((gb_col&0x1F)<<10)|(gb_col&0x3e0)|((gb_col&0x7c00)>>10);
+	if(rgb565) {
+		return ((gb_col&0x001f) << 10) |
+		       ((gb_col&0x07c0) >>  1) |
+		       ((gb_col&0xf800) >> 11);
+	}
+	return ((gb_col&0x001f) << 10) |
+	       ((gb_col&0x03e0)      ) | 
+	       ((gb_col&0x7c00) >> 10);
 }
 
 void dmy_renderer::refresh() {

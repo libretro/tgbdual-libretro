@@ -158,7 +158,7 @@ size_t retro_serialize_size(void)
 
 bool retro_serialize(void *data, size_t size)
 {
-	if (size >= retro_serialize_size()) { // extra room is fine too
+	if (size == retro_serialize_size()) {
 		uint8_t *ptr = (uint8_t*)data;
 		_BOTH_GB_ {
 			g_gb[i]->save_state_mem(ptr);
@@ -171,7 +171,7 @@ bool retro_serialize(void *data, size_t size)
 
 bool retro_unserialize(const void *data, size_t size)
 {
-	if (size >= retro_serialize_size()) { // extra data is fine too
+	if (size == retro_serialize_size()) {
 		uint8_t *ptr = (uint8_t*)data;
 		_BOTH_GB_ {
 			g_gb[i]->restore_state_mem(ptr);

@@ -42,4 +42,5 @@ public:
 private:
 	int cur_time;
 	int which_gb;
+	bool rgb565;
 };
