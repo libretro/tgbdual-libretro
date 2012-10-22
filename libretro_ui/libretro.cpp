@@ -153,6 +153,10 @@ size_t retro_serialize_size(void)
 {
 	if ( ! (_serialize_size[0] + _serialize_size[1]) ) {
 		_BOTH_GB_ _serialize_size[i] = g_gb[i]->get_state_size();
+		fprintf(stderr, "[TGB] retro_serialize_size: %d { %d, %d }\n",
+		        _serialize_size[0] + _serialize_size[1],
+		        _serialize_size[0],
+		        _serialize_size[1]);
 	}
 	return _serialize_size[0] + _serialize_size[1];
 }
@@ -167,6 +171,8 @@ bool retro_serialize(void *data, size_t size)
 		}
 		return true;
 	}
+	fprintf(stderr, "[TGB] retro_serialize: incorrect size %d (should be %d)\n",
+	        size, retro_serialize_size());
 	return false;
 }
 
@@ -180,6 +186,8 @@ bool retro_unserialize(const void *data, size_t size)
 		}
 		return true;
 	}
+	fprintf(stderr, "[TGB] retro_unserialize: incorrect size %d (should be %d)\n",
+	        size, retro_serialize_size());
 	return false;
 }
 
