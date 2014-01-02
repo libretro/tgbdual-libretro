@@ -12,7 +12,7 @@ OBJS += $(CSOURCES:.c=.o)
 all: libretro.so
 
 libretro.so: $(OBJS)
-	$(CXX) -o libretro.so $(OBJS) $(LIBS) $(CXXFLAGS) $(LDFLAGS)
+	$(CXX) -o tgbdual_libretro.so $(OBJS) $(LIBS) $(CXXFLAGS) $(LDFLAGS)
 
 %.o:%.c
 	$(CC) -c $(CFLAGS) $<
@@ -21,5 +21,4 @@ libretro.so: $(OBJS)
 	$(CXX) -c $(CXXFLAGS) $<
 
 clean:
-	rm -f $(OBJS) libretro.so
-
+	rm -f $(OBJS) tgbdual_libretro.so
