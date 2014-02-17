@@ -11,6 +11,7 @@
 gb *g_gb[2];
 dmy_renderer *render[2];
 
+retro_log_printf_t log_cb;
 retro_video_refresh_t video_cb;
 //retro_audio_sample_t audio_cb;
 retro_audio_sample_batch_t audio_batch_cb;
@@ -53,6 +54,13 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 void retro_init(void)
 {
+   struct retro_log_callback log;
+
+   if(environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
+      log_cb = log.log;
+   else
+      log_cb = NULL;
+
 	g_gb[0]   = g_gb[1]   = NULL;
 	render[0] = render[1] = NULL;
 }
@@ -159,13 +167,8 @@ size_t retro_get_memory_size(unsigned id)
 // answer: yes, it's most likely needed to sync up netplay and for bsv records.
 size_t retro_serialize_size(void)
 {
-	if ( ! (_serialize_size[0] + _serialize_size[1]) ) {
+	if ( ! (_serialize_size[0] + _serialize_size[1]) )
 		_BOTH_GB_ _serialize_size[i] = g_gb[i]->get_state_size();
-		fprintf(stderr, "[TGB] retro_serialize_size: %d { %d, %d }\n",
-		        _serialize_size[0] + _serialize_size[1],
-		        _serialize_size[0],
-		        _serialize_size[1]);
-	}
 	return _serialize_size[0] + _serialize_size[1];
 }
 
@@ -179,8 +182,6 @@ bool retro_serialize(void *data, size_t size)
 		}
 		return true;
 	}
-	fprintf(stderr, "[TGB] retro_serialize: incorrect size %d (should be %d)\n",
-	        size, retro_serialize_size());
 	return false;
 }
 
@@ -194,8 +195,6 @@ bool retro_unserialize(const void *data, size_t size)
 		}
 		return true;
 	}
-	fprintf(stderr, "[TGB] retro_unserialize: incorrect size %d (should be %d)\n",
-	        size, retro_serialize_size());
 	return false;
 }
 
@@ -208,14 +207,17 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 	   Would've been nice, for RTC support, but it doesn't save for the
 	   base cartridge (g_gb[0] here), just the "actual" GB cartridge (g_gb[1]).
 	 */
-	if( !(type == RETRO_GAME_TYPE_SUFAMI_TURBO && num == 3) ) {
-		printf("Invalid load_game_special type: %x, %d\n", type, num);
-		for (int i = 0; i < num; ++i) puts(info[i].path);
-		puts("Load either a single normal GB/GBC game,");
-		puts(" or load two GB/GBC games as slot A and B of 'Sufami Turbo'");
-		puts(" (pick some dummy file for the BIOS, it won't be used)");
-		return false;
-	}
+	if( !(type == RETRO_GAME_TYPE_SUFAMI_TURBO && num == 3) )
+   {
+      /*
+      printf("Invalid load_game_special type: %x, %d\n", type, num);
+      for (int i = 0; i < num; ++i) puts(info[i].path);
+      puts("Load either a single normal GB/GBC game,");
+      puts(" or load two GB/GBC games as slot A and B of 'Sufami Turbo'");
+      puts(" (pick some dummy file for the BIOS, it won't be used)");
+      */
+      return false;
+   }
 	++info; // skip the "base cart"
 	retro_load_game(&info[0]); // NB: this resets the _serialize_size array too
 	render[1] = new dmy_renderer(1);
@@ -236,9 +238,9 @@ void retro_cheat_reset(void)
 
 void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {
-	puts("warning: retro_cheat_set is not yet implemented for TGB Dual.");
-	printf("CHEAT:  id=%d, enabled=%d, code='%s'\n", index, enabled, code);
 #if 1==0
+   if (log_cb)
+      log_cb(RETRO_LOG_INFO, "CHEAT:  id=%d, enabled=%d, code='%s'\n", index, enabled, code);
 	// FIXME: work in progress.
 	// As it stands, it seems TGB Dual only has support for Gameshark codes.
 	// Unfortunately, the cheat.xml that ships with bsnes seems to only have
