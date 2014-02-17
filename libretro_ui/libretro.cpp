@@ -124,8 +124,16 @@ size_t retro_get_memory_size(unsigned id)
 	switch(id) {
 		case RETRO_MEMORY_SAVE_RAM: return g_gb[0]->get_rom()->get_sram_size();
 		case RETRO_MEMORY_RTC:      return sizeof(render[0]->fixed_time);
-		case RETRO_MEMORY_VIDEO_RAM:  return 0x2000*2; //sizeof(cpu::vram);
-		case RETRO_MEMORY_SYSTEM_RAM: return 0x2000*4; //sizeof(cpu::ram);
+		case RETRO_MEMORY_VIDEO_RAM:
+			if (g_gb[0]->get_rom()->get_info()->gb_type >= 3) {
+				return 0x2000*2; //sizeof(cpu::vram);
+			}
+			return 0x2000;
+		case RETRO_MEMORY_SYSTEM_RAM:
+			if (g_gb[0]->get_rom()->get_info()->gb_type >= 3) {
+				return 0x2000*4; //sizeof(cpu::ram);
+			}
+			return 0x2000;
 		// for dual GB support.
 		case RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM:
 			if(g_gb[0]) return g_gb[0]->get_rom()->get_sram_size();
