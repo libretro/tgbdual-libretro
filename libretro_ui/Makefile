@@ -9,9 +9,9 @@ CSOURCES=$(wildcard *.c)
 OBJS = $(SOURCES:.cpp=.o)
 OBJS += $(CSOURCES:.c=.o)
 
-all: libretro.so
+all: tgbdual_libretro.so
 
-libretro.so: $(OBJS)
+tgbdual_libretro.so: $(OBJS)
 	$(CXX) -o tgbdual_libretro.so $(OBJS) $(LIBS) $(CXXFLAGS) $(LDFLAGS)
 
 %.o:%.c
