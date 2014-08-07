@@ -22,7 +22,6 @@
 // CPU emulation unit (I/O, IRQ, etc.)
 
 #include "gb.h"
-#include <memory.h>
 #include <string.h>
 
 #define Z_FLAG 0x40

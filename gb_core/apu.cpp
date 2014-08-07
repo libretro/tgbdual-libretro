@@ -26,7 +26,6 @@
 
 #include "gb.h"
 #include <stdlib.h>
-#include <memory.h>
 
 static dword sq1_cur_pos=0;
 static dword sq2_cur_pos=0;

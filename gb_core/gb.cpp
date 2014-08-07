@@ -23,7 +23,6 @@
 
 #include "gb.h"
 #include <stdlib.h>
-#include <memory.h>
 
 gb::gb(renderer *ref,bool b_lcd,bool b_apu)
 {

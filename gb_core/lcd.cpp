@@ -22,7 +22,6 @@
 // inline assembler あり 適宜変更せよ
 
 #include "gb.h"
-#include <memory.h>
 
 #define ROL_BYTE(var, bits) (var = ((var) & (-1 << 8)) \
                              | (((var)<<(bits))&0xff) \

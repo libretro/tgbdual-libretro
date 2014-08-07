@@ -22,7 +22,6 @@
 
 #include "gb.h"
 #include <stdlib.h>
-#include <memory.h>
 #if !defined(__APPLE__)
 #include <malloc.h>
 #endif
