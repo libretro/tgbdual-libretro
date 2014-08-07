@@ -35,7 +35,7 @@ TARGET_NAME := tgbdual
 ifeq ($(platform), unix)
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
-   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
+   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=libretro/link.T
 else ifeq ($(platform), osx)
    TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
@@ -65,7 +65,7 @@ endif
 else ifeq ($(platform), qnx)
    TARGET := $(TARGET_NAME)_libretro_qnx.so
    fpic := -fPIC
-   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
+   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=libretro/link.T
 	CC = qcc -Vgcc_ntoarmv7le
 	CXX = QCC -Vgcc_ntoarmv7le_cpp
 else ifeq ($(platform), ps3)
@@ -95,7 +95,7 @@ else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
    CXX = g++
-   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
+   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=libretro/link.T
    LDFLAGS += -static-libgcc -static-libstdc++ -lwinmm
 endif
 TGBDUAL_DIR := gb_core
@@ -108,7 +108,7 @@ TGBDUAL_SOURCES := $(TGBDUAL_DIR)/apu.cpp \
 	$(TGBDUAL_DIR)/mbc.cpp \
 	$(TGBDUAL_DIR)/rom.cpp
 
-LIBRETRO_DIR := libretro_ui
+LIBRETRO_DIR := libretro
 LIBRETRO_SOURCES := $(LIBRETRO_DIR)/dmy_renderer.cpp \
 	$(LIBRETRO_DIR)/libretro.cpp
 
@@ -125,7 +125,7 @@ endif
 
 LDFLAGS += $(fpic) -lz $(SHARED)
 FLAGS += $(fpic) 
-FLAGS += -I. -Igb_core -Ilibretro_ui
+FLAGS += -I. -Igb_core -Ilibretro
 
 ifeq ($(OLD_GCC), 1)
 WARNINGS := -Wall
