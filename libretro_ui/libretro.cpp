@@ -8,6 +8,10 @@
 #include "../gb_core/gb.h"
 #include "dmy_renderer.h"
 
+#define RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM ((3 << 8) | RETRO_MEMORY_SAVE_RAM)
+#define RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM ((4 << 8) | RETRO_MEMORY_SAVE_RAM)
+#define RETRO_GAME_TYPE_SUFAMI_TURBO 0x103
+
 gb *g_gb[2];
 dmy_renderer *render[2];
 
