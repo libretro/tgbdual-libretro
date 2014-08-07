@@ -100,7 +100,12 @@ void retro_reset(void)
 void retro_run(void)
 {
 	input_poll_cb();
-	_BOTH_GB_ g_gb[i]->run();
+	for (int line=0;line<154;line++){
+		if (g_gb[0])
+			g_gb[0]->run();
+		if (g_gb[1])
+			g_gb[1]->run();
+	}
 }
 
 
