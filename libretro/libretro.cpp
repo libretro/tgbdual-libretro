@@ -89,16 +89,14 @@ void retro_deinit(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-	render[0] = new dmy_renderer(0);
-	g_gb[0]   = new gb(render[0], true, true);
-	g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0);
+   render[0] = new dmy_renderer(0);
+   g_gb[0]   = new gb(render[0], true, true);
+   g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0);
 
    for (int i = 0; i < 2; i++)
-   {
       _serialize_size[i] = 0;
-   }
 
-	return true;
+   return true;
 }
 
 void retro_unload_game(void)
@@ -207,7 +205,7 @@ size_t retro_get_memory_size(unsigned id)
 // answer: yes, it's most likely needed to sync up netplay and for bsv records.
 size_t retro_serialize_size(void)
 {
-	if ( ! (_serialize_size[0] + _serialize_size[1]) )
+	if (!(_serialize_size[0] + _serialize_size[1]))
    {
       for(int i = 0; i < 2; ++i)
       {
@@ -266,7 +264,8 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 	   Would've been nice, for RTC support, but it doesn't save for the
 	   base cartridge (g_gb[0] here), just the "actual" GB cartridge (g_gb[1]).
 	 */
-	if( !(type == RETRO_GAME_TYPE_SUFAMI_TURBO && num == 3) )
+
+	if(!(type == RETRO_GAME_TYPE_SUFAMI_TURBO && num == 3))
    {
       /*
       printf("Invalid load_game_special type: %x, %d\n", type, num);
@@ -355,7 +354,6 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
 }
 
 
-
 // start boilerplate
 
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
@@ -364,7 +362,7 @@ unsigned retro_get_region(void) { return RETRO_REGION_NTSC; }
 void retro_set_controller_port_device(unsigned port, unsigned device) { }
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
-void retro_set_audio_sample(retro_audio_sample_t cb) { /*audio_cb = cb;*/ }
+void retro_set_audio_sample(retro_audio_sample_t cb) { }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
