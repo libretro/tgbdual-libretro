@@ -24,6 +24,7 @@ retro_input_state_t input_state_cb;
 
 static size_t _serialize_size[2] = { 0, 0 };
 extern bool _screen_2p_vertical;
+bool gblink_enable = false;
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -85,16 +86,45 @@ void retro_deinit(void)
    }
 }
 
+static void check_variables(void)
+{
+   struct retro_variable var;
+   var.key = "tgbdual_gblink_enable";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "disabled"))
+         gblink_enable = false;
+      else if (!strcmp(var.value, "enabled"))
+         gblink_enable = true;
+   }
+   else
+      gblink_enable = false;
+}
 
 
 bool retro_load_game(const struct retro_game_info *info)
 {
+   check_variables();
+
    render[0] = new dmy_renderer(0);
    g_gb[0]   = new gb(render[0], true, true);
    g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0);
 
    for (int i = 0; i < 2; i++)
       _serialize_size[i] = 0;
+
+   if (gblink_enable)
+   {
+      render[1] = new dmy_renderer(1);
+      g_gb[1] = new gb(render[1], true, true);
+      g_gb[1]->load_rom((byte*)info->data, info->size, NULL, 0);
+      // for link cables and IR:
+      g_gb[0]->set_target(g_gb[1]);
+      g_gb[1]->set_target(g_gb[0]);
+   }
+
 
    return true;
 }
@@ -114,6 +144,11 @@ void retro_reset(void)
 
 void retro_run(void)
 {
+   bool updated = false;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      check_variables();
+
 	input_poll_cb();
 
    for (int line = 0;line < 154; line++)
@@ -284,6 +319,7 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 	// for link cables and IR:
 	g_gb[0]->set_target(g_gb[1]);
 	g_gb[1]->set_target(g_gb[0]);
+   gblink_enable = true;
 	return true;
 }
 
@@ -366,6 +402,16 @@ void retro_set_audio_sample(retro_audio_sample_t cb) { }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
-void retro_set_environment(retro_environment_t cb) { environ_cb = cb; }
+
+void retro_set_environment(retro_environment_t cb)
+{
+   static const struct retro_variable vars[] = {
+      { "tgbdual_gblink_enable", "GB Link Enable (restart); disabled|enabled" },
+      { NULL, NULL },
+   };
+
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+   environ_cb = cb;
+}
 
 // end boilerplate

@@ -36,6 +36,8 @@ extern retro_input_poll_t input_poll_cb;
 extern retro_input_state_t input_state_cb;
 extern retro_environment_t environ_cb;
 
+extern bool gblink_enable;
+
 #define MSG_FRAMES 60
 #define SAMPLES_PER_FRAME (44100/60)
 
@@ -124,8 +126,9 @@ void dmy_renderer::refresh() {
 	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_LEFT)  ) << 6 |
 	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_RIGHT) ) << 7;
 
-   if (g_gb[1])
-   { // if dual gb mode
+   if (g_gb[1] && gblink_enable)
+   {
+      // if dual gb mode
       if (audio_2p_mode == 2)
       {
          // mix down to one per channel (dual mono)
@@ -188,7 +191,7 @@ void dmy_renderer::render_screen(byte *buf,int width,int height,int depth)
    const int half = sizeof(joined_buf)/2;
    int pitch = width*((depth+7)/8);
 
-   if(g_gb[1])
+   if(g_gb[1] && gblink_enable)
    {
       // are we running two gb's?
       if(_screen_2p_vertical)
