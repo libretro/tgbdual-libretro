@@ -17,7 +17,6 @@ dmy_renderer *render[2];
 
 retro_log_printf_t log_cb;
 retro_video_refresh_t video_cb;
-//retro_audio_sample_t audio_cb;
 retro_audio_sample_batch_t audio_batch_cb;
 retro_environment_t environ_cb;
 retro_input_poll_t input_poll_cb;
@@ -26,32 +25,32 @@ retro_input_state_t input_state_cb;
 static size_t _serialize_size[2] = { 0, 0 };
 extern bool _screen_2p_vertical;
 
-#define _BOTH_GB_ for(int i=0; i<2; ++i) if(g_gb[i])
-
 void retro_get_system_info(struct retro_system_info *info)
 {
 	info->library_name = "TGB Dual";
 	info->library_version = "v0.8.3";
 	info->need_fullpath = false;
-	info->valid_extensions = "gb|gbc|sgb|GB|GBC|SGB";
+	info->valid_extensions = "gb|gbc|sgb";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-	int w = 160, h = 144;
-	if (g_gb[1]) {
-		// screen orientation for dual gameboy mode
-		if(_screen_2p_vertical) {
-			h *= 2;
-		} else {
-			w *= 2;
-		}
-	}
-	info->timing.fps = 60.0f;
-	info->timing.sample_rate = 44100.0f;
-	info->geometry.base_width = info->geometry.max_width = w;
-	info->geometry.base_height = info->geometry.max_height = h;
-	info->geometry.aspect_ratio = float(w) / float(h);
+   int w = 160, h = 144;
+
+   if (g_gb[1])
+   {
+      // screen orientation for dual gameboy mode
+      if(_screen_2p_vertical)
+         h *= 2;
+      else
+         w *= 2;
+   }
+
+   info->timing.fps = 60.0f;
+   info->timing.sample_rate = 44100.0f;
+   info->geometry.base_width = info->geometry.max_width = w;
+   info->geometry.base_height = info->geometry.max_height = h;
+   info->geometry.aspect_ratio = float(w) / float(h);
 }
 
 
@@ -65,12 +64,25 @@ void retro_init(void)
    else
       log_cb = NULL;
 
-	g_gb[0]   = g_gb[1]   = NULL;
-	render[0] = render[1] = NULL;
+   for (int i = 0; i < 2; i++)
+   {
+      g_gb[i]   = NULL;
+      render[i] = NULL;
+   }
 }
 
 void retro_deinit(void)
 {
+   for(int i = 0; i < 2; ++i)
+   {
+      if (g_gb[i])
+      {
+         delete g_gb[i];
+         g_gb[i] = NULL;
+         delete render[i];
+         render[i] = NULL;
+      }
+   }
 }
 
 
@@ -78,85 +90,103 @@ void retro_deinit(void)
 bool retro_load_game(const struct retro_game_info *info)
 {
 	render[0] = new dmy_renderer(0);
-	g_gb[0] = new gb(render[0], true, true);
+	g_gb[0]   = new gb(render[0], true, true);
 	g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0);
-	_serialize_size[0] = _serialize_size[1] = 0;
+
+   for (int i = 0; i < 2; i++)
+   {
+      _serialize_size[i] = 0;
+   }
+
 	return true;
 }
 
 void retro_unload_game(void)
 {
-	_BOTH_GB_ {
-		delete g_gb[i];   g_gb[i] = NULL;
-		delete render[i]; render[i] = NULL;
-	}
 }
 
 void retro_reset(void)
 {
-	_BOTH_GB_ g_gb[i]->reset();
+	for(int i = 0; i < 2; ++i)
+   {
+      if (g_gb[i])
+         g_gb[i]->reset();
+   }
 }
 
 void retro_run(void)
 {
 	input_poll_cb();
-	for (int line=0;line<154;line++){
-		if (g_gb[0])
-			g_gb[0]->run();
-		if (g_gb[1])
-			g_gb[1]->run();
-	}
+
+   for (int line = 0;line < 154; line++)
+   {
+      if (g_gb[0])
+         g_gb[0]->run();
+      if (g_gb[1])
+         g_gb[1]->run();
+   }
 }
 
 
 
 void *retro_get_memory_data(unsigned id)
 {
-	switch(id) {
-		case RETRO_MEMORY_SAVE_RAM:   return g_gb[0]->get_rom()->get_sram();
-		case RETRO_MEMORY_RTC:        return &(render[0]->fixed_time);
-		case RETRO_MEMORY_VIDEO_RAM:  return g_gb[0]->get_cpu()->get_vram();
-		case RETRO_MEMORY_SYSTEM_RAM: return g_gb[0]->get_cpu()->get_ram();
-		// for dual GB support.
-		case RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM:
-			if(g_gb[0]) return g_gb[0]->get_rom()->get_sram();
-			break;
-		case RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM:
-			if(g_gb[1]) return g_gb[1]->get_rom()->get_sram();
-			break;
-		/* SGB was the initial attempt for dual-cart support.
-		case RETRO_MEMORY_SNES_GAME_BOY_RAM:
-			if(g_gb[1]) return g_gb[1]->get_rom()->get_sram();
-			break;
-		case RETRO_MEMORY_SNES_GAME_BOY_RTC:
-			if(render[1]) return &(render[1]->fixed_time);
-			break;*/
-		default: break;
-	}
+   switch(id)
+   {
+      case RETRO_MEMORY_SAVE_RAM:
+         return g_gb[0]->get_rom()->get_sram();
+      case RETRO_MEMORY_RTC:
+         return &(render[0]->fixed_time);
+      case RETRO_MEMORY_VIDEO_RAM:
+         return g_gb[0]->get_cpu()->get_vram();
+      case RETRO_MEMORY_SYSTEM_RAM:
+         return g_gb[0]->get_cpu()->get_ram();
+         // for dual GB support.
+      case RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM:
+         if(g_gb[0])
+            return g_gb[0]->get_rom()->get_sram();
+         break;
+      case RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM:
+         if(g_gb[1])
+            return g_gb[1]->get_rom()->get_sram();
+         break;
+         /* SGB was the initial attempt for dual-cart support.
+            case RETRO_MEMORY_SNES_GAME_BOY_RAM:
+            if(g_gb[1]) return g_gb[1]->get_rom()->get_sram();
+            break;
+            case RETRO_MEMORY_SNES_GAME_BOY_RTC:
+            if(render[1]) return &(render[1]->fixed_time);
+            break;*/
+      default:
+         break;
+   }
 	return NULL;
 }
 
 size_t retro_get_memory_size(unsigned id)
 {
-	switch(id) {
-		case RETRO_MEMORY_SAVE_RAM: return g_gb[0]->get_rom()->get_sram_size();
-		case RETRO_MEMORY_RTC:      return sizeof(render[0]->fixed_time);
+	switch(id)
+   {
+		case RETRO_MEMORY_SAVE_RAM:
+         return g_gb[0]->get_rom()->get_sram_size();
+		case RETRO_MEMORY_RTC:
+         return sizeof(render[0]->fixed_time);
 		case RETRO_MEMORY_VIDEO_RAM:
-			if (g_gb[0]->get_rom()->get_info()->gb_type >= 3) {
+			if (g_gb[0]->get_rom()->get_info()->gb_type >= 3)
 				return 0x2000*2; //sizeof(cpu::vram);
-			}
 			return 0x2000;
 		case RETRO_MEMORY_SYSTEM_RAM:
-			if (g_gb[0]->get_rom()->get_info()->gb_type >= 3) {
+			if (g_gb[0]->get_rom()->get_info()->gb_type >= 3)
 				return 0x2000*4; //sizeof(cpu::ram);
-			}
 			return 0x2000;
 		// for dual GB support.
 		case RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM:
-			if(g_gb[0]) return g_gb[0]->get_rom()->get_sram_size();
+			if(g_gb[0])
+            return g_gb[0]->get_rom()->get_sram_size();
 			break;
 		case RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM:
-			if(g_gb[1]) return g_gb[1]->get_rom()->get_sram_size();
+			if(g_gb[1])
+            return g_gb[1]->get_rom()->get_sram_size();
 			break;
 		/* SGB was the initial attempt for dual GB support.
 		case RETRO_MEMORY_SNES_GAME_BOY_RAM:
@@ -165,7 +195,8 @@ size_t retro_get_memory_size(unsigned id)
 		case RETRO_MEMORY_SNES_GAME_BOY_RTC:
 			if(render[1]) return sizeof(render[1]->fixed_time);
 			break; */
-		default: break;
+		default:
+         break;
 	}
 	return 0;
 }
@@ -177,18 +208,31 @@ size_t retro_get_memory_size(unsigned id)
 size_t retro_serialize_size(void)
 {
 	if ( ! (_serialize_size[0] + _serialize_size[1]) )
-		_BOTH_GB_ _serialize_size[i] = g_gb[i]->get_state_size();
+   {
+      for(int i = 0; i < 2; ++i)
+      {
+         if (g_gb[i])
+            _serialize_size[i] = g_gb[i]->get_state_size();
+      }
+   }
 	return _serialize_size[0] + _serialize_size[1];
 }
 
 bool retro_serialize(void *data, size_t size)
 {
-	if (size == retro_serialize_size()) {
+	if (size == retro_serialize_size())
+   {
 		uint8_t *ptr = (uint8_t*)data;
-		_BOTH_GB_ {
-			g_gb[i]->save_state_mem(ptr);
-			ptr += _serialize_size[i];
-		}
+
+      for(int i = 0; i < 2; ++i)
+      {
+         if (g_gb[i])
+         {
+            g_gb[i]->save_state_mem(ptr);
+            ptr += _serialize_size[i];
+         }
+      }
+
 		return true;
 	}
 	return false;
@@ -196,12 +240,18 @@ bool retro_serialize(void *data, size_t size)
 
 bool retro_unserialize(const void *data, size_t size)
 {
-	if (size == retro_serialize_size()) {
+	if (size == retro_serialize_size())
+   {
 		uint8_t *ptr = (uint8_t*)data;
-		_BOTH_GB_ {
-			g_gb[i]->restore_state_mem(ptr);
-			ptr += _serialize_size[i];
-		}
+
+      for(int i = 0; i < 2; ++i)
+      {
+         if (g_gb[i])
+         {
+            g_gb[i]->restore_state_mem(ptr);
+            ptr += _serialize_size[i];
+         }
+      }
 		return true;
 	}
 	return false;
@@ -242,7 +292,11 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 
 void retro_cheat_reset(void)
 {
-	_BOTH_GB_ g_gb[i]->get_cheat()->clear();
+   for(int i=0; i<2; ++i)
+   {
+      if(g_gb[i])
+         g_gb[i]->get_cheat()->clear();
+   }
 }
 
 void retro_cheat_set(unsigned index, bool enabled, const char *code)
@@ -255,40 +309,47 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
 	// Unfortunately, the cheat.xml that ships with bsnes seems to only have
 	// Game Genie codes, which are ROM patches rather than RAM.
 	// http://nocash.emubase.de/pandocs.htm#gamegeniesharkcheats
-	if(false && g_gb[0]) {
-		cheat_dat cdat;
-		cheat_dat *tmp=&cdat;
+	if(false && g_gb[0])
+   {
+      cheat_dat cdat;
+      cheat_dat *tmp=&cdat;
 
-		strncpy(cdat.name, code, sizeof(cdat.name));
+      strncpy(cdat.name, code, sizeof(cdat.name));
 
-		tmp->enable = true;
-		tmp->next = NULL;
-		while(false) { // basically, iterate over code.split('+')
-			// TODO: remove all non-alnum chars here
-			if (false) { // if strlen is 9, game genie
-				// game genie format: for "ABCDEFGHI",
-				// AB   = New data
-				// FCDE = Memory address, XORed by 0F000h
-				// GIH  = Check data (can be ignored for our purposes)
-				word scramble;
-				sscanf(code, "%2hhx%4hx", &tmp->dat, &scramble);
-				tmp->code = 1; // TODO: test if this is correct for ROM patching
-				tmp->adr = (((scramble&0xF) << 12) ^ 0xF000) | (scramble >> 4);
-			} else if (false) { // if strlen is 8, gameshark
-				// gameshark format for "ABCDEFGH",
-				// AB    External RAM bank number
-				// CD    New Data
-				// GHEF  Memory Address (internal or external RAM, A000-DFFF)
-				byte adrlo, adrhi;
-				sscanf(code, "%2hhx%2hhx%2hhx%2hhx", &tmp->code, &tmp->dat, &adrlo, &adrhi);
-				tmp->adr = (adrhi<<8) | adrlo;
-			}
-			if(false) { // if there are more cheats left in the string
-				tmp->next = new cheat_dat;
-				tmp = tmp->next;
-			}
-		}
-	}
+      tmp->enable = true;
+      tmp->next = NULL;
+
+      while(false)
+      { // basically, iterate over code.split('+')
+         // TODO: remove all non-alnum chars here
+         if (false)
+         { // if strlen is 9, game genie
+            // game genie format: for "ABCDEFGHI",
+            // AB   = New data
+            // FCDE = Memory address, XORed by 0F000h
+            // GIH  = Check data (can be ignored for our purposes)
+            word scramble;
+            sscanf(code, "%2hhx%4hx", &tmp->dat, &scramble);
+            tmp->code = 1; // TODO: test if this is correct for ROM patching
+            tmp->adr = (((scramble&0xF) << 12) ^ 0xF000) | (scramble >> 4);
+         }
+         else if (false)
+         { // if strlen is 8, gameshark
+            // gameshark format for "ABCDEFGH",
+            // AB    External RAM bank number
+            // CD    New Data
+            // GHEF  Memory Address (internal or external RAM, A000-DFFF)
+            byte adrlo, adrhi;
+            sscanf(code, "%2hhx%2hhx%2hhx%2hhx", &tmp->code, &tmp->dat, &adrlo, &adrhi);
+            tmp->adr = (adrhi<<8) | adrlo;
+         }
+         if(false)
+         { // if there are more cheats left in the string
+            tmp->next = new cheat_dat;
+            tmp = tmp->next;
+         }
+      }
+   }
 	g_gb[0].get_cheat().add_cheat(&cdat);
 #endif
 }
