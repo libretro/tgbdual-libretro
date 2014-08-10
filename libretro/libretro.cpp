@@ -58,6 +58,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 void retro_init(void)
 {
+   unsigned level = 4;
    struct retro_log_callback log;
 
    if(environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
@@ -70,6 +71,8 @@ void retro_init(void)
       g_gb[i]   = NULL;
       render[i] = NULL;
    }
+
+   environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
 }
 
 void retro_deinit(void)
