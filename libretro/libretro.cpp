@@ -47,7 +47,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
          w *= 2;
    }
 
-   info->timing.fps = 60.0f;
+   info->timing.fps = 4194304.0 / 70224.0;
    info->timing.sample_rate = 44100.0f;
    info->geometry.base_width = info->geometry.max_width = w;
    info->geometry.base_height = info->geometry.max_height = h;
