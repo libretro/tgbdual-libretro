@@ -123,7 +123,7 @@ else
 FLAGS += -O3 -ffast-math
 endif
 
-LDFLAGS += $(fpic) -lz $(SHARED)
+LDFLAGS += $(fpic) $(SHARED)
 FLAGS += $(fpic) 
 FLAGS += -I. -Igb_core -Ilibretro
 
