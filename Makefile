@@ -104,22 +104,12 @@ else
    SHARED := -shared -Wl,--no-undefined -Wl,--version-script=libretro/link.T
    LDFLAGS += -static-libgcc -static-libstdc++ -lwinmm
 endif
-TGBDUAL_DIR := gb_core
 
-TGBDUAL_SOURCES := $(TGBDUAL_DIR)/apu.cpp \
-	$(TGBDUAL_DIR)/cheat.cpp \
-	$(TGBDUAL_DIR)/cpu.cpp \
-	$(TGBDUAL_DIR)/gb.cpp \
-	$(TGBDUAL_DIR)/lcd.cpp \
-	$(TGBDUAL_DIR)/mbc.cpp \
-	$(TGBDUAL_DIR)/rom.cpp
+CORE_DIR := .
 
-LIBRETRO_DIR := libretro
-LIBRETRO_SOURCES := $(LIBRETRO_DIR)/dmy_renderer.cpp \
-	$(LIBRETRO_DIR)/libretro.cpp
+include Makefile.common
 
-SOURCES := $(LIBRETRO_SOURCES) $(TGBDUAL_SOURCES)
-OBJECTS := $(SOURCES:.cpp=.o) $(SOURCES_C:.c=.o)
+OBJECTS := $(SOURCES_CXX:.cpp=.o)
 
 all: $(TARGET)
 
@@ -131,7 +121,7 @@ endif
 
 LDFLAGS += $(fpic) $(SHARED)
 FLAGS += $(fpic) 
-FLAGS += -I. -Igb_core -Ilibretro
+FLAGS += $(INCFLAGS)
 
 ifeq ($(OLD_GCC), 1)
 WARNINGS := -Wall
