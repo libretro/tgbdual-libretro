@@ -42,6 +42,8 @@ extern bool gblink_enable;
 #define SAMPLES_PER_FRAME (44100/60)
 
 bool _screen_2p_vertical = false;
+bool _screen_switched = false; // set to draw player 2 on the left/top
+int _show_player_screens = 2; // 0 = p1 only, 1 = p2 only, 2 = both players
 
 static inline bool button_pressed(int pad, int btn)
 {
@@ -190,22 +192,38 @@ void dmy_renderer::render_screen(byte *buf,int width,int height,int depth)
    static byte joined_buf[160*144*2*2]; // two screens' worth of 16-bit data
    const int half = sizeof(joined_buf)/2;
    int pitch = width*((depth+7)/8);
+   int switched_gb = which_gb;
+   if (_screen_switched)
+      switched_gb = 1 - switched_gb;
 
+   // are we running two gb's?
    if(g_gb[1] && gblink_enable)
    {
-      // are we running two gb's?
-      if(_screen_2p_vertical)
+      // are we drawing both gb's to the screen?
+      if (_show_player_screens == 2)
       {
-         memcpy(joined_buf + which_gb*half, buf, half);
-         if(which_gb == 1)
-            video_cb(joined_buf, width, height*2, pitch);
+         if(_screen_2p_vertical)
+         {
+            memcpy(joined_buf + switched_gb*half, buf, half);
+            if(which_gb == 1)
+               video_cb(joined_buf, width, height*2, pitch);
+         }
+         else
+         {
+            for (int row = 0; row < height; ++row)
+               memcpy(joined_buf + pitch*(2*row + switched_gb), buf+pitch*row, pitch);
+            if(which_gb == 1)
+               video_cb(joined_buf, width*2, height, pitch*2);
+         }
       }
       else
       {
-         for (int row = 0; row < height; ++row)
-            memcpy(joined_buf + pitch*(2*row + which_gb), buf+pitch*row, pitch);
-         if(which_gb == 1)
-            video_cb(joined_buf, width*2, height, pitch*2);
+         // are we currently on the gb that we want to draw?
+         // (this ignores the "switch player screens" setting)
+         if (_show_player_screens == which_gb)
+            memcpy(joined_buf, buf, half);
+         if (which_gb == 1)
+            video_cb(joined_buf, width, height, pitch);
       }
    }
    else
