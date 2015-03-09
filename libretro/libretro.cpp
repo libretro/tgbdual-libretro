@@ -2,6 +2,7 @@
 #define _GNU_SOURCE 1 // for fopencookie hack in serialize_size
 #endif
 
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "libretro.h"
@@ -24,7 +25,12 @@ retro_input_state_t input_state_cb;
 
 static size_t _serialize_size[2] = { 0, 0 };
 extern bool _screen_2p_vertical;
+extern bool _screen_switched;
+extern int _show_player_screens;
 bool gblink_enable = false;
+// used to make certain core options only take effect once on core startup
+bool already_checked_options = false;
+struct retro_system_av_info *my_av_info = (retro_system_av_info*)malloc(sizeof(*my_av_info));
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -37,8 +43,10 @@ void retro_get_system_info(struct retro_system_info *info)
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
    int w = 160, h = 144;
+   info->geometry.max_width = w * 2;
+   info->geometry.max_height = h * 2;
 
-   if (g_gb[1])
+   if (g_gb[1] && _show_player_screens == 2)
    {
       // screen orientation for dual gameboy mode
       if(_screen_2p_vertical)
@@ -49,9 +57,10 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
    info->timing.fps = 4194304.0 / 70224.0;
    info->timing.sample_rate = 44100.0f;
-   info->geometry.base_width = info->geometry.max_width = w;
-   info->geometry.base_height = info->geometry.max_height = h;
+   info->geometry.base_width = w;
+   info->geometry.base_height = h;
    info->geometry.aspect_ratio = float(w) / float(h);
+   memcpy(my_av_info, info, sizeof(*my_av_info));
 }
 
 
@@ -87,23 +96,83 @@ void retro_deinit(void)
          render[i] = NULL;
       }
    }
+   free(my_av_info);
 }
 
 static void check_variables(void)
 {
    struct retro_variable var;
+
+   // check whether link cable mode is enabled
    var.key = "tgbdual_gblink_enable";
    var.value = NULL;
-
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (!strcmp(var.value, "disabled"))
-         gblink_enable = false;
-      else if (!strcmp(var.value, "enabled"))
-         gblink_enable = true;
+      if (!already_checked_options) { // only apply this setting on init
+         if (!strcmp(var.value, "disabled"))
+            gblink_enable = false;
+         else if (!strcmp(var.value, "enabled"))
+            gblink_enable = true;
+      }
    }
    else
       gblink_enable = false;
+
+   // check whether screen placement is horz (side-by-side) or vert
+   var.key = "tgbdual_screen_placement";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "horizontal"))
+         _screen_2p_vertical = false;
+      else if (!strcmp(var.value, "vertical"))
+         _screen_2p_vertical = true;
+   }
+   else
+      _screen_2p_vertical = false;
+
+   // check whether player 1 and 2's screen placements are swapped
+   var.key = "tgbdual_switch_screens";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "normal"))
+         _screen_switched = false;
+      else if (!strcmp(var.value, "switched"))
+         _screen_switched = true;
+   }
+   else
+      _screen_switched = false;
+
+   // check whether to show both players' screens, p1 only, or p2 only
+   var.key = "tgbdual_single_screen_mp";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "both players"))
+         _show_player_screens = 2;
+      else if (!strcmp(var.value, "player 1 only"))
+         _show_player_screens = 0;
+      else if (!strcmp(var.value, "player 2 only"))
+         _show_player_screens = 1;
+   }
+   else
+      _show_player_screens = 2;
+
+   int screenw = 160, screenh = 144;
+   if (gblink_enable && _show_player_screens == 2)
+   {
+      if (_screen_2p_vertical)
+         screenh *= 2;
+      else
+         screenw *= 2;
+   }
+   my_av_info->geometry.base_width = screenw;
+   my_av_info->geometry.base_height = screenh;
+   my_av_info->geometry.aspect_ratio = float(screenw) / float(screenh);
+
+   already_checked_options = true;
+   environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, my_av_info);
 }
 
 
@@ -438,6 +507,9 @@ void retro_set_environment(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
       { "tgbdual_gblink_enable", "GB Link Enable (restart); disabled|enabled" },
+      { "tgbdual_screen_placement", "Screen placement (restart); horizontal|vertical" },
+      { "tgbdual_switch_screens", "Switch player screens; normal|switched" },
+      { "tgbdual_single_screen_mp", "Show player screens; both players|player 1 only|player 2 only" },
       { NULL, NULL },
    };
 
