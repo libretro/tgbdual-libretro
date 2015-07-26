@@ -543,7 +543,7 @@ void apu_snd::update()
 	}
 
 	if (stat.wav_playing&&stat.master_enable){
-		if (stat.wav_hold&&stat.wav_len&&(counter%128==0)){
+		if (stat.wav_hold&&stat.wav_len){
 			stat.wav_len--;
 			if (stat.wav_len<=0){
 				stat.wav_playing=false;
