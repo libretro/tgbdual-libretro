@@ -394,12 +394,14 @@ void cpu::io_write(word adr,byte dat)
 					seri_occer=total_clock+512;
 			}
 			else{ // GBCでの拡張 // Enhancements in GBC
-				ref_gb->get_regs()->SC=dat&0x83;
-				if ((dat&0x80)&&(dat&1)) // 送信開始 // Transmission start
-					if (dat&2)
-						seri_occer=total_clock+512*8/32; // 転送速度通常の32倍 // 32 times the normal transfer rate
+				ref_gb->get_regs()->SC = dat & 0x83;
+				if ((dat & 0x80) && (dat & 1)) // 送信開始 // Transmission start
+            {
+					if (dat & 2)
+						seri_occer = total_clock + 512 * 8 / 32; // 転送速度通常の32倍 // 32 times the normal transfer rate
 					else
-						seri_occer=total_clock+512*8;
+						seri_occer = total_clock + 512 * 8;
+            }
 			}
 			return;
 		case 0xFF04://DIV(ディバイダー) // DIV (divider)
