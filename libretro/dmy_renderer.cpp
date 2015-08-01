@@ -71,8 +71,10 @@ dmy_renderer::dmy_renderer(int which)
 	retro_pixel_format pixfmt = RETRO_PIXEL_FORMAT_RGB565;
 	rgb565 = environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixfmt);
 
+#ifndef FRONTEND_SUPPORTS_RGB565
 	if (rgb565)
 		puts("Frontend supports RGB565; will use that instead of XRGB1555.");
+#endif
 }
 
 dmy_renderer::~dmy_renderer()
@@ -81,29 +83,37 @@ dmy_renderer::~dmy_renderer()
 
 word dmy_renderer::map_color(word gb_col)
 {
-	if(rgb565)
+#ifndef FRONTEND_SUPPORTS_RGB565
+   if(rgb565)
    {
+#endif
       return ((gb_col&0x001f) << 11) |
          ((gb_col&0x03e0) <<  1) |
          ((gb_col&0x0200) >>  4) |
          ((gb_col&0x7c00) >> 10);
+#ifndef FRONTEND_SUPPORTS_RGB565
    }
    return ((gb_col&0x001f) << 10) |
       ((gb_col&0x03e0)      ) | 
       ((gb_col&0x7c00) >> 10);
+#endif
 }
 
 word dmy_renderer::unmap_color(word gb_col)
 {
+#ifndef FRONTEND_SUPPORTS_RGB565
    if(rgb565)
    {
+#endif
       return ((gb_col&0x001f) << 10) |
          ((gb_col&0x07c0) >>  1) |
          ((gb_col&0xf800) >> 11);
+#ifndef FRONTEND_SUPPORTS_RGB565
    }
    return ((gb_col&0x001f) << 10) |
       ((gb_col&0x03e0)      ) | 
       ((gb_col&0x7c00) >> 10);
+#endif
 }
 
 void dmy_renderer::refresh() {

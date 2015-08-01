@@ -126,6 +126,8 @@ else
 FLAGS += -O3 -ffast-math -DNDEBUG
 endif
 
+FLAGS += -DFRONTEND_SUPPORTS_RGB565
+
 LDFLAGS += $(fpic) $(SHARED)
 FLAGS += $(fpic) 
 FLAGS += $(INCFLAGS)
