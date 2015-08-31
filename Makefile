@@ -104,6 +104,13 @@ else ifeq ($(platform), psp1)
 	AR = psp-ar$(EXE_EXT)
    STATIC_LINKING = 1
 	FLAGS += -G0 -DLSB_FIRST
+else ifeq ($(platform), vita)
+   TARGET := $(TARGET_NAME)_libretro_vita.a
+	CC = arm-vita-eabi-gcc$(EXE_EXT)
+	CXX = arm-vita-eabi-g++$(EXE_EXT)
+	AR = arm-vita-eabi-ar$(EXE_EXT)
+   STATIC_LINKING = 1
+	FLAGS += -DLSB_FIRST -DVITA
 else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
