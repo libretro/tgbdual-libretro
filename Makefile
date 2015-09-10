@@ -104,6 +104,8 @@ else ifeq ($(platform), psp1)
 	AR = psp-ar$(EXE_EXT)
    STATIC_LINKING = 1
 	FLAGS += -G0
+
+# Vita
 else ifeq ($(platform), vita)
    TARGET := $(TARGET_NAME)_libretro_vita.a
 	CC = arm-vita-eabi-gcc$(EXE_EXT)
@@ -111,6 +113,16 @@ else ifeq ($(platform), vita)
 	AR = arm-vita-eabi-ar$(EXE_EXT)
    STATIC_LINKING = 1
 	FLAGS += -DVITA
+
+# CTR (3DS)
+else ifeq ($(platform), ctr)
+	TARGET := $(TARGET_NAME)_libretro_ctr.a
+	CC = $(DEVKITARM)/bin/arm-none-eabi-gcc$(EXE_EXT)
+	CXX = $(DEVKITARM)/bin/arm-none-eabi-g++$(EXE_EXT)
+	AR = $(DEVKITARM)/bin/arm-none-eabi-ar$(EXE_EXT)
+   STATIC_LINKING = 1
+	FLAGS += -D_3DS
+
 else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
