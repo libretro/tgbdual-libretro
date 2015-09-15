@@ -64,51 +64,60 @@ void lcd::reset()
 
 void lcd::bg_render(void *buf,int scanline)
 {
+	int i,x,y;
+   int start, end, y_and_7, y_div_8, prefix = 0;
+   byte *trans, *now_tile;
+	dword tmp_dat, calc1, calc2;
+   word back, pat, *dat;
+   word *now_share, *now_pat, *now_share2, *now_pat2;
+   byte *vrams[2];
+	word share  = 0x0000;//prefix
+	word pal[4];
+	byte tile;
+
 	if (!(ref_gb->get_regs()->LCDC&0x80)||!(ref_gb->get_regs()->LCDC&0x01)||
-		(ref_gb->get_regs()->WY<=(dword)scanline&&ref_gb->get_regs()->WX<8&&(ref_gb->get_regs()->LCDC&0x20))){
-		if (!(ref_gb->get_regs()->LCDC&0x80)||!(ref_gb->get_regs()->LCDC&0x01)){
-			word *tmp_w=(word*)buf+160*scanline;
-			word tmp_dat=ref_gb->get_renderer()->map_color(0x7fff);
-			for (int t=0;t<160;t++)
-				*(tmp_w++)=tmp_dat;
-//			memset(((word*)buf)+160*scanline,0xff,160*2);
-		}
+		(ref_gb->get_regs()->WY<=(dword)scanline&&ref_gb->get_regs()->WX<8&&(ref_gb->get_regs()->LCDC&0x20)))
+   {
+		if (!(ref_gb->get_regs()->LCDC&0x80)||!(ref_gb->get_regs()->LCDC&0x01))
+      {
+         word *tmp_w=(word*)buf+160*scanline;
+         word tmp_dat=ref_gb->get_renderer()->map_color(0x7fff);
+         for (int t=0;t<160;t++)
+            *(tmp_w++)=tmp_dat;
+      }
 		return;
 	}
 
-	word back=(ref_gb->get_regs()->LCDC&0x08)?0x1C00:0x1800;
-	word pat=(ref_gb->get_regs()->LCDC&0x10)?0x0000:0x1000;
-	word share=0x0000;//prefix
-	word pal[4];
-	byte tile;
-	int i,x,y;
-	byte *vrams[2]={ref_gb->get_cpu()->get_vram(),ref_gb->get_cpu()->get_vram()+0x2000};
+	back      = (ref_gb->get_regs()->LCDC&0x08)?0x1C00:0x1800;
+	pat       = (ref_gb->get_regs()->LCDC&0x10)?0x0000:0x1000;
+	vrams[0]  = ref_gb->get_cpu()->get_vram();
+   vrams[1]  = ref_gb->get_cpu()->get_vram() +0x2000;
 
-	pal[0]=m_pal16[ref_gb->get_regs()->BGP&0x3];
-	pal[1]=m_pal16[(ref_gb->get_regs()->BGP>>2)&0x3];
-	pal[2]=m_pal16[(ref_gb->get_regs()->BGP>>4)&0x3];
-	pal[3]=m_pal16[(ref_gb->get_regs()->BGP>>6)&0x3];
+	pal[0]    = m_pal16[ref_gb->get_regs()->BGP&0x3];
+	pal[1]    = m_pal16[(ref_gb->get_regs()->BGP>>2)&0x3];
+	pal[2]    = m_pal16[(ref_gb->get_regs()->BGP>>4)&0x3];
+	pal[3]    = m_pal16[(ref_gb->get_regs()->BGP>>6)&0x3];
 
-	y=scanline+ref_gb->get_regs()->SCY;
-	if (y>=256)
-		y-=256;
-	x=ref_gb->get_regs()->SCX;
+	y         = scanline+ref_gb->get_regs()->SCY;
+	if (y >= 256)
+		y     -= 256;
+	x         = ref_gb->get_regs()->SCX;
 
-	word *dat=((word*)buf)+scanline*160;
+	dat       = ((word*)buf)+scanline*160;
 
-	int start=ref_gb->get_regs()->SCX>>3;
-	int end=(start+20>32)?32:(start+21);
-	int y_and_7=y&7;
-	int y_div_8=y>>3;
-	int prefix=0;
-	byte *trans=trans_tbl;
-	byte *now_tile=vrams[0]+back+((y_div_8)<<5)+start;
-	word *now_share=(word*)(vrams[0]+share+((y&7)<<1));
-	word *now_pat=(word*)(vrams[0]+pat+((y&7)<<1));
-	word *now_share2=(word*)(vrams[0]+share+14-((y&7)<<1));
-	word *now_pat2=(word*)(vrams[0]+pat+14-((y&7)<<1));
-	dword tmp_dat;
-	dword calc1,calc2;
+
+	start=ref_gb->get_regs()->SCX>>3;
+	end=(start+20>32)?32:(start+21);
+	y_and_7=y&7;
+	y_div_8=y>>3;
+
+
+	trans=trans_tbl;
+	now_tile=vrams[0]+back+((y_div_8)<<5)+start;
+	now_share=(word*)(vrams[0]+share+((y&7)<<1));
+	now_pat=(word*)(vrams[0]+pat+((y&7)<<1));
+	now_share2=(word*)(vrams[0]+share+14-((y&7)<<1));
+	now_pat2=(word*)(vrams[0]+pat+14-((y&7)<<1));
 
 	tile=*(now_tile++);
 	tmp_dat=(tile&0x80)?*(now_share+(tile<<3)):*(now_pat+(tile<<3));
@@ -141,8 +150,8 @@ void lcd::bg_render(void *buf,int scanline)
 	*(trans++)=calc2&3;
 	*(trans++)=calc1&3;
 
-	dat-=8;
-	trans-=8;
+	dat   -= 8;
+	trans -= 8;
 
 	for (i=0;i<8-(x&7);i++){ // スクロール補正
 		*(dat++)=*(dat+(x&7));
@@ -288,12 +297,13 @@ void lcd::sprite_render(void *buf,int scanline)
 			x=oam[i*4+1]-8;
 			if ((x==-8&&y==-16)||x>160||y>144+15||(y<scanline)||(y>scanline+15))
 				continue;
-			if (scanline-y+15<8){
-				now=(atr&0x40)?((y-scanline)&7):(7-(y-scanline)&7);
+			if (scanline-y+15<8)
+         {
+				now= (atr & 0x40) ? ((y-scanline) & 7) : ((7 - (y - scanline)) & 7);
 				tmp_dat=*(word*)(vram+(tile&0xfe)*16+now*2+((atr&0x40)?16:0));
 			}
 			else{
-				now=(atr&0x40)?((y-scanline)&7):(7-(y-scanline)&7);
+				now= (atr & 0x40) ? ((y-scanline) & 7) : ((7-(y-scanline)) & 7);
 				tmp_dat=*(word*)(vram+(tile&0xfe)*16+now*2+((atr&0x40)?0:16));
 			}
 		}
@@ -302,7 +312,7 @@ void lcd::sprite_render(void *buf,int scanline)
 			x=oam[i*4+1]-8;
 			if ((x==-8&&y==-16)||(x>160)||(y>144+7)||(y<scanline)||(y>scanline+7))
 				continue;
-			now=(atr&0x40)?((y-scanline)&7):(7-(y-scanline)&7);
+			now=(atr&0x40)?((y-scanline)&7):((7-(y-scanline)) & 7);
 			tmp_dat=*(word*)(vram+tile*16+now*2);
 		}
 		sprite_count++;
@@ -374,6 +384,11 @@ void lcd::sprite_render(void *buf,int scanline)
 
 void lcd::bg_render_color(void *buf,int scanline)
 {
+	byte tile;
+	int i,x,y;
+   word back, pat, *pal, *dat;
+   byte *vrams[2];
+   word share=0x0000;//prefix
 	trans_count=0;
 
 	// カラーではOFF機能が働かない?(僕のキャンプ場､モンコレナイト)
@@ -390,20 +405,17 @@ void lcd::bg_render_color(void *buf,int scanline)
 		return;
 	}
 
-	word back=(ref_gb->get_regs()->LCDC&0x08)?0x1C00:0x1800;
-	word pat=(ref_gb->get_regs()->LCDC&0x10)?0x0000:0x1000;
-	word share=0x0000;//prefix
-	word *pal;
-	byte tile;
-	int i,x,y;
-	byte *vrams[2]={ref_gb->get_cpu()->get_vram(),ref_gb->get_cpu()->get_vram()+0x2000};
+	back=(ref_gb->get_regs()->LCDC&0x08)?0x1C00:0x1800;
+	pat=(ref_gb->get_regs()->LCDC&0x10)?0x0000:0x1000;
+	vrams[0] = ref_gb->get_cpu()->get_vram();
+   vrams[1] = ref_gb->get_cpu()->get_vram()+0x2000;
 
 	y=scanline+ref_gb->get_regs()->SCY;
 	if (y>=256)
 		y-=256;
 	x=ref_gb->get_regs()->SCX;
 
-	word *dat=((word*)buf)+scanline*160;
+	dat=((word*)buf)+scanline*160;
 
 	int start=ref_gb->get_regs()->SCX>>3;
 	int end=(start+20>32)?32:(start+21);
@@ -652,11 +664,11 @@ void lcd::sprite_render_color(void *buf,int scanline)
 				continue;
 
 			if (scanline-y+15<8){ //上半分
-				now=(atr&0x40)?((y-scanline)&7):(7-(y-scanline)&7);
+				now=(atr&0x40)?((y-scanline)&7):((7-(y-scanline)) &7);
 				tmp_dat=*(word*)(vram+bank+(tile&0xfe)*16+now*2+((atr&0x40)?16:0));
 			}
 			else{ // 下半分
-				now=(atr&0x40)?((y-scanline)&7):(7-(y-scanline)&7);
+				now=(atr&0x40)?((y-scanline)&7):((7-(y-scanline)) &7);
 				tmp_dat=*(word*)(vram+bank+(tile&0xfe)*16+now*2+((atr&0x40)?0:16));
 			}
 		}
@@ -666,7 +678,7 @@ void lcd::sprite_render_color(void *buf,int scanline)
 			if ((x==-8&&y==-16)||(x>160)||(y>144+7)||(y<scanline)||(y>scanline+7))
 				continue;
 
-			now=(atr&0x40)?((y-scanline)&7):(7-(y-scanline)&7);
+			now=(atr&0x40)?((y-scanline)&7):((7-(y-scanline)) & 7);
 			tmp_dat=*(word*)(vram+tile*16+now*2+bank);
 		}
 		sprite_count++;
