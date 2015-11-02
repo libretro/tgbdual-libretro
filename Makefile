@@ -32,10 +32,21 @@ endif
 
 TARGET_NAME := tgbdual
 
+ifeq ($(ARCHFLAGS),)
+ifeq ($(archs),ppc)
+   ARCHFLAGS = -arch ppc -arch ppc64
+else
+   ARCHFLAGS = -arch i386 -arch x86_64
+endif
+endif
+
+# Unix
 ifeq ($(platform), unix)
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
    SHARED := -shared -Wl,--no-undefined -Wl,--version-script=libretro/link.T
+
+# OS X
 else ifeq ($(platform), osx)
    TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
@@ -70,6 +81,8 @@ else
    CC     += -miphoneos-version-min=5.0
    CXX    += -miphoneos-version-min=5.0
 endif
+
+# Theos
 else ifeq ($(platform), theos_ios)
 DEPLOYMENT_IOSVERSION = 5.0
 TARGET = iphone:latest:$(DEPLOYMENT_IOSVERSION)
@@ -79,12 +92,16 @@ THEOS_BUILD_DIR := objs
 include $(THEOS)/makefiles/common.mk
 
 LIBRARY_NAME = $(TARGET_NAME)_libretro_ios
+
+# QNX
 else ifeq ($(platform), qnx)
    TARGET := $(TARGET_NAME)_libretro_qnx.so
    fpic := -fPIC
    SHARED := -shared -Wl,--no-undefined -Wl,--version-script=libretro/link.T
 	CC = qcc -Vgcc_ntoarmv7le
 	CXX = QCC -Vgcc_ntoarmv7le_cpp
+
+# PS3
 else ifeq ($(platform), ps3)
    TARGET := $(TARGET_NAME)_libretro_ps3.a
    CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
@@ -93,6 +110,8 @@ else ifeq ($(platform), ps3)
    STATIC_LINKING = 1
 	FLAGS += -DMSB_FIRST
 	OLD_GCC = 1
+
+# sncps3
 else ifeq ($(platform), sncps3)
    TARGET := $(TARGET_NAME)_libretro_ps3.a
    CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
@@ -101,6 +120,8 @@ else ifeq ($(platform), sncps3)
    STATIC_LINKING = 1
 	FLAGS += -DMSB_FIRST
 	NO_GCC = 1
+
+# PSP
 else ifeq ($(platform), psp1)
    TARGET := $(TARGET_NAME)_libretro_psp1.a
 	CC = psp-gcc$(EXE_EXT)
@@ -127,6 +148,7 @@ else ifeq ($(platform), ctr)
    STATIC_LINKING = 1
 	FLAGS += -D_3DS
 
+# Windows
 else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
@@ -178,6 +200,14 @@ CFLAGS += $(FLAGS)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
+
+ifeq ($(platform), osx)
+ifndef ($(NOUNIVERSAL))
+   CFLAGS += $(ARCHFLAGS)
+   CXXFLAGS += $(ARCHFLAGS)
+   LFLAGS += $(ARCHFLAGS)
+endif
+endif
 
 ifeq ($(platform), theos_ios)
 COMMON_FLAGS := -DIOS $(COMMON_DEFINES) $(INCFLAGS) -I$(THEOS_INCLUDE_PATH) -Wno-error
