@@ -15,11 +15,11 @@ ifeq ($(TARGET_ARCH),mips)
 LOCAL_CFLAGS += -DANDROID_MIPS
 endif
 
-CORE_DIR := ../..
+CORE_DIR := ..
 
 LOCAL_MODULE    := libretro
 
-include ../../Makefile.common
+include $(CORE_DIR)/Makefile.common
 
 LOCAL_SRC_FILES := $(SOURCES_CXX) 
 
