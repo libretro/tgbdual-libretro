@@ -210,7 +210,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
    render[0] = new dmy_renderer(0);
    g_gb[0]   = new gb(render[0], true, true);
-   g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0);
+   if (!g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0))
+      return false;
 
    for (int i = 0; i < 2; i++)
       _serialize_size[i] = 0;
@@ -219,7 +220,10 @@ bool retro_load_game(const struct retro_game_info *info)
    {
       render[1] = new dmy_renderer(1);
       g_gb[1] = new gb(render[1], true, true);
-      g_gb[1]->load_rom((byte*)info->data, info->size, NULL, 0);
+
+      if (!g_gb[1]->load_rom((byte*)info->data, info->size, NULL, 0))
+         return false;
+
       // for link cables and IR:
       g_gb[0]->set_target(g_gb[1]);
       g_gb[1]->set_target(g_gb[0]);

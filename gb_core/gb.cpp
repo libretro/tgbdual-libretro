@@ -114,12 +114,12 @@ void gb::set_skip(int frame)
 
 bool gb::load_rom(byte *buf,int size,byte *ram,int ram_size)
 {
-	if (m_rom->load_rom(buf,size,ram,ram_size)){
+	if (m_rom->load_rom(buf,size,ram,ram_size))
+   {
 		reset();
 		return true;
 	}
-	else
-		return false;
+   return false;
 }
 
 // savestate format matching the original TGB dual, pre-libretro port
