@@ -511,7 +511,7 @@ void retro_set_environment(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
       { "tgbdual_gblink_enable", "GB Link Enable (restart); disabled|enabled" },
-      { "tgbdual_screen_placement", "Screen placement (restart); horizontal|vertical" },
+      { "tgbdual_screen_placement", "Screen placement; horizontal|vertical" },
       { "tgbdual_switch_screens", "Switch player screens; normal|switched" },
       { "tgbdual_single_screen_mp", "Show player screens; both players|player 1 only|player 2 only" },
       { NULL, NULL },
