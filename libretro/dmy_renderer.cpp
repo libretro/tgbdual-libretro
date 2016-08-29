@@ -77,10 +77,6 @@ dmy_renderer::dmy_renderer(int which)
 #endif
 }
 
-dmy_renderer::~dmy_renderer()
-{
-}
-
 word dmy_renderer::map_color(word gb_col)
 {
 #ifndef FRONTEND_SUPPORTS_RGB565

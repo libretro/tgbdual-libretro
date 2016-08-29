@@ -23,7 +23,7 @@ class dmy_renderer : public renderer
 {
 public:
 	dmy_renderer(int which);
-	~dmy_renderer();
+	virtual ~dmy_renderer(){};
 
 	virtual void reset() {}
 	virtual word get_sensor(bool x_y) { return 0; }
