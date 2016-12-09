@@ -35,7 +35,10 @@ struct retro_system_av_info *my_av_info = (retro_system_av_info*)malloc(sizeof(*
 void retro_get_system_info(struct retro_system_info *info)
 {
 	info->library_name = "TGB Dual";
-	info->library_version = "v0.8.3";
+#ifndef GIT_VERSION
+#define GIT_VERSION ""
+#endif
+	info->library_version = "v0.8.3" GIT_VERSION;
 	info->need_fullpath = false;
 	info->valid_extensions = "gb|gbc|sgb";
 }
