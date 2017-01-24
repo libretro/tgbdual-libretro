@@ -78,28 +78,11 @@ void retro_init(void)
    else
       log_cb = NULL;
 
-   for (int i = 0; i < 2; i++)
-   {
-      g_gb[i]   = NULL;
-      render[i] = NULL;
-   }
-
    environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
 }
 
 void retro_deinit(void)
 {
-   for(int i = 0; i < 2; ++i)
-   {
-      if (g_gb[i])
-      {
-         delete g_gb[i];
-         g_gb[i] = NULL;
-         delete render[i];
-         render[i] = NULL;
-      }
-   }
-   free(my_av_info);
 }
 
 static void check_variables(void)
@@ -181,7 +164,7 @@ static void check_variables(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-   check_variables();
+   unsigned i;
 
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
@@ -209,6 +192,17 @@ bool retro_load_game(const struct retro_game_info *info)
       { 0 },
    };
 
+   if (!info)
+      return false;
+
+   for (i = 0; i < 2; i++)
+   {
+      g_gb[i]   = NULL;
+      render[i] = NULL;
+   }
+
+   check_variables();
+
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
    render[0] = new dmy_renderer(0);
@@ -216,7 +210,7 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0))
       return false;
 
-   for (int i = 0; i < 2; i++)
+   for (i = 0; i < 2; i++)
       _serialize_size[i] = 0;
 
    if (gblink_enable)
@@ -238,6 +232,18 @@ bool retro_load_game(const struct retro_game_info *info)
 
 void retro_unload_game(void)
 {
+   unsigned i;
+   for(i = 0; i < 2; ++i)
+   {
+      if (g_gb[i])
+      {
+         delete g_gb[i];
+         g_gb[i] = NULL;
+         delete render[i];
+         render[i] = NULL;
+      }
+   }
+   free(my_av_info);
 }
 
 void retro_reset(void)
@@ -349,7 +355,9 @@ size_t retro_serialize_size(void)
 {
 	if (!(_serialize_size[0] + _serialize_size[1]))
    {
-      for(int i = 0; i < 2; ++i)
+      unsigned i;
+
+      for(i = 0; i < 2; ++i)
       {
          if (g_gb[i])
             _serialize_size[i] = g_gb[i]->get_state_size();
@@ -362,9 +370,10 @@ bool retro_serialize(void *data, size_t size)
 {
 	if (size == retro_serialize_size())
    {
+      unsigned i;
 		uint8_t *ptr = (uint8_t*)data;
 
-      for(int i = 0; i < 2; ++i)
+      for(i = 0; i < 2; ++i)
       {
          if (g_gb[i])
          {
@@ -382,9 +391,10 @@ bool retro_unserialize(const void *data, size_t size)
 {
 	if (size == retro_serialize_size())
    {
+      unsigned i;
 		uint8_t *ptr = (uint8_t*)data;
 
-      for(int i = 0; i < 2; ++i)
+      for(i = 0; i < 2; ++i)
       {
          if (g_gb[i])
          {
