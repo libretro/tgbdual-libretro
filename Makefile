@@ -220,7 +220,12 @@ OBJECTS := $(SOURCES_CXX:.cpp=.o)
 ifeq ($(DEBUG),1)
 FLAGS += -O0 -g
 else
-FLAGS += -O2 -ffast-math -DNDEBUG
+FLAGS += -O2 -DNDEBUG
+endif
+
+ifneq (,$(findstring msvc,$(platform)))
+else
+FLAGS += -ffast-math
 endif
 
 FLAGS += -DFRONTEND_SUPPORTS_RGB565
