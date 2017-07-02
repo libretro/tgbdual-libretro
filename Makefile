@@ -48,7 +48,7 @@ endif
 ifeq ($(platform), unix)
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
-   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=libretro/link.T
+   SHARED := -shared -Wl,--version-script=libretro/link.T
 
 # OS X
 else ifeq ($(platform), osx)
@@ -101,7 +101,7 @@ LIBRARY_NAME = $(TARGET_NAME)_libretro_ios
 else ifeq ($(platform), qnx)
    TARGET := $(TARGET_NAME)_libretro_$(platform).so
    fpic := -fPIC
-   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=libretro/link.T
+   SHARED := -shared -Wl,--version-script=libretro/link.T
 	CC = qcc -Vgcc_ntoarmv7le
 	CXX = QCC -Vgcc_ntoarmv7le_cpp
 
@@ -207,7 +207,7 @@ else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
    CXX = g++
-   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=libretro/link.T
+   SHARED := -shared -Wl,--version-script=libretro/link.T
    LDFLAGS += -static-libgcc -static-libstdc++ -lwinmm
 endif
 
@@ -230,7 +230,7 @@ endif
 
 FLAGS += -DFRONTEND_SUPPORTS_RGB565
 
-LDFLAGS += $(fpic) $(SHARED)
+LDFLAGS += $(fpic)
 FLAGS += $(fpic) 
 FLAGS += $(INCFLAGS)
 
@@ -264,6 +264,8 @@ ifndef ($(NOUNIVERSAL))
 endif
 endif
 
+LIBS :=
+
 OBJOUT   = -o
 LINKOUT  = -o 
 
@@ -289,7 +291,7 @@ $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING), 1)
 	$(AR) rcs $@ $(OBJECTS)
 else
-	$(LD) $(LINKOUT)$@ $^ $(LDFLAGS)
+	$(LD) $(LINKOUT)$@ $(SHARED) $(OBJECTS) $(LDFLAGS) $(LIBS)
 endif
 
 %.o: %.cpp
