@@ -361,7 +361,7 @@ else
 	LD = link.exe
 endif
 else
-	LD = $(CC)
+	LD = $(CXX)
 endif
 
 INCFLAGS += $(INCFLAGS_PLATFORM)
