@@ -123,17 +123,6 @@ void dmy_renderer::refresh() {
 		{ "Audio: silence",           MSG_FRAMES },
 	};
 
-	// update pad state: a,b,select,start,down,up,left,right
-	pad_state =
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_A)     ) << 0 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_B)     ) << 1 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_SELECT)) << 2 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_START) ) << 3 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_DOWN)  ) << 4 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_UP)    ) << 5 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_LEFT)  ) << 6 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_RIGHT) ) << 7;
-
    if (g_gb[1] && gblink_enable)
    {
       // if dual gb mode
@@ -190,6 +179,16 @@ no_change:
 
 int dmy_renderer::check_pad()
 {
+	// update pad state: a,b,select,start,down,up,left,right
+	pad_state =
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_A)     ) << 0 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_B)     ) << 1 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_SELECT)) << 2 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_START) ) << 3 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_DOWN)  ) << 4 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_UP)    ) << 5 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_LEFT)  ) << 6 |
+	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_RIGHT) ) << 7;
 	return pad_state;
 }
 
