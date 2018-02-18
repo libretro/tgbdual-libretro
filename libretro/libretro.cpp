@@ -13,6 +13,33 @@
 #define RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM ((4 << 8) | RETRO_MEMORY_SAVE_RAM)
 #define RETRO_GAME_TYPE_SUFAMI_TURBO 0x103
 
+#define RETRO_MEMORY_GAMEBOY_1_SRAM ((1 << 8) | RETRO_MEMORY_SAVE_RAM)
+#define RETRO_MEMORY_GAMEBOY_1_RTC ((2 << 8) | RETRO_MEMORY_RTC)
+#define RETRO_MEMORY_GAMEBOY_2_SRAM ((3 << 8) | RETRO_MEMORY_SAVE_RAM)
+#define RETRO_MEMORY_GAMEBOY_2_RTC ((3 << 8) | RETRO_MEMORY_RTC)
+
+#define RETRO_GAME_TYPE_GAMEBOY_LINK_2P 0x101
+
+static const struct retro_subsystem_memory_info gb1_memory[] = {
+    { "srm", RETRO_MEMORY_GAMEBOY_1_SRAM },
+    { "rtc", RETRO_MEMORY_GAMEBOY_1_RTC },
+};
+
+static const struct retro_subsystem_memory_info gb2_memory[] = {
+    { "srm", RETRO_MEMORY_GAMEBOY_2_SRAM },
+    { "rtc", RETRO_MEMORY_GAMEBOY_2_RTC },
+};
+
+static const struct retro_subsystem_rom_info gb_roms[] = {
+    { "GameBoy #1", "gb|gbc", false, false, false, gb1_memory, 1 },
+    { "GameBoy #2", "gb|gbc", false, false, false, gb2_memory, 1 },
+};
+
+   static const struct retro_subsystem_info subsystems[] = {
+      { "2 Player Game Boy Link", "gb_link_2p", gb_roms, 2, RETRO_GAME_TYPE_GAMEBOY_LINK_2P },
+      { NULL },
+};
+
 gb *g_gb[2];
 dmy_renderer *render[2];
 
@@ -230,6 +257,80 @@ bool retro_load_game(const struct retro_game_info *info)
    return true;
 }
 
+
+bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num_info)
+{
+
+    if (type != RETRO_GAME_TYPE_GAMEBOY_LINK_2P)
+        return false; /* all other types are unhandled for now */
+
+   unsigned i;
+
+   struct retro_input_descriptor desc[] = {
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "D-Pad Up" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "D-Pad Down" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,     "B" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,     "A" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "Prev Audio Mode" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "Next Audio Mode" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "Select" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START, "Start" },
+
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "D-Pad Up" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "D-Pad Down" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,     "B" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,     "A" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "Prev Audio Mode" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "Next Audio Mode" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START, "Start" },
+      { 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "Select" },
+
+      { 0 },
+   };
+
+   if (!info)
+      return false;
+
+   for (i = 0; i < 2; i++)
+   {
+      g_gb[i]   = NULL;
+      render[i] = NULL;
+   }
+
+   check_variables();
+
+   environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
+
+   render[0] = new dmy_renderer(0);
+   g_gb[0]   = new gb(render[0], true, true);
+   if (!g_gb[0]->load_rom((byte*)info[0].data, info[0].size, NULL, 0))
+      return false;
+
+   for (i = 0; i < 2; i++)
+      _serialize_size[i] = 0;
+
+   if (gblink_enable)
+   {
+      render[1] = new dmy_renderer(1);
+      g_gb[1] = new gb(render[1], true, true);
+
+      if (!g_gb[1]->load_rom((byte*)info[1].data, info[1].size, NULL, 0))
+         return false;
+
+      // for link cables and IR:
+      g_gb[0]->set_target(g_gb[1]);
+      g_gb[1]->set_target(g_gb[0]);
+   }
+
+
+   return true;
+}
+
+
 void retro_unload_game(void)
 {
    unsigned i;
@@ -409,39 +510,6 @@ bool retro_unserialize(const void *data, size_t size)
 
 
 
-bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num)
-{
-	/* Originally used RETRO_GAME_TYPE_SUPER_GAME_BOY (num == 2), but then
-	   both games don't have their SRAM loaded/saved by retroarch.
-	   Would've been nice, for RTC support, but it doesn't save for the
-	   base cartridge (g_gb[0] here), just the "actual" GB cartridge (g_gb[1]).
-	 */
-
-	if(!(type == RETRO_GAME_TYPE_SUFAMI_TURBO && num == 3))
-   {
-      /*
-      printf("Invalid load_game_special type: %x, %d\n", type, num);
-      for (int i = 0; i < num; ++i) puts(info[i].path);
-      puts("Load either a single normal GB/GBC game,");
-      puts(" or load two GB/GBC games as slot A and B of 'Sufami Turbo'");
-      puts(" (pick some dummy file for the BIOS, it won't be used)");
-      */
-      return false;
-   }
-	++info; // skip the "base cart"
-	retro_load_game(&info[0]); // NB: this resets the _serialize_size array too
-	render[1] = new dmy_renderer(1);
-	g_gb[1] = new gb(render[1], true, true);
-	g_gb[1]->load_rom((byte*)info[1].data, info[1].size, NULL, 0);
-	// for link cables and IR:
-	g_gb[0]->set_target(g_gb[1]);
-	g_gb[1]->set_target(g_gb[0]);
-   gblink_enable = true;
-	return true;
-}
-
-
-
 void retro_cheat_reset(void)
 {
    for(int i=0; i<2; ++i)
@@ -530,8 +598,9 @@ void retro_set_environment(retro_environment_t cb)
       { NULL, NULL },
    };
 
-   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
    environ_cb = cb;
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+   cb(RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO, (void*)subsystems);
 }
 
 // end boilerplate
