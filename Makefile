@@ -126,17 +126,17 @@ else ifeq ($(platform), ps3)
 
 # sncps3
 else ifeq ($(platform), sncps3)
-   TARGET := $(TARGET_NAME)_libretro_ps3.a
-   CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
-   CXX = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
-   AR = $(CELL_SDK)/host-win32/sn/bin/ps3snarl.exe
-   STATIC_LINKING = 1
+	TARGET := $(TARGET_NAME)_libretro_ps3.a
+	CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
+	CXX = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
+	AR = $(CELL_SDK)/host-win32/sn/bin/ps3snarl.exe
+	STATIC_LINKING = 1
 	FLAGS += -DMSB_FIRST
 	NO_GCC = 1
 
 # PSP
 else ifeq ($(platform), psp1)
-   TARGET := $(TARGET_NAME)_libretro_$(platform).a
+	TARGET := $(TARGET_NAME)_libretro_$(platform).a
 	CC = psp-gcc$(EXE_EXT)
 	CXX = psp-g++$(EXE_EXT)
 	AR = psp-ar$(EXE_EXT)
@@ -145,7 +145,7 @@ else ifeq ($(platform), psp1)
 
 # Vita
 else ifeq ($(platform), vita)
-   TARGET := $(TARGET_NAME)_libretro_$(platform).a
+	TARGET := $(TARGET_NAME)_libretro_$(platform).a
 	CC = arm-vita-eabi-gcc$(EXE_EXT)
 	CXX = arm-vita-eabi-g++$(EXE_EXT)
 	AR = arm-vita-eabi-ar$(EXE_EXT)
@@ -158,7 +158,7 @@ else ifeq ($(platform), ctr)
 	CC = $(DEVKITARM)/bin/arm-none-eabi-gcc$(EXE_EXT)
 	CXX = $(DEVKITARM)/bin/arm-none-eabi-g++$(EXE_EXT)
 	AR = $(DEVKITARM)/bin/arm-none-eabi-ar$(EXE_EXT)
-   STATIC_LINKING = 1
+	STATIC_LINKING = 1
 	FLAGS += -D_3DS
 
 # Nintendo Switch (libtransistor)
@@ -168,10 +168,19 @@ else ifeq ($(platform), switch)
         include $(LIBTRANSISTOR_HOME)/libtransistor.mk
         STATIC_LINKING=1
 
+# Nintendo WiiU
+else ifeq ($(platform), wiiu)
+	TARGET := $(TARGET_NAME)_libretro_$(platform).a
+	CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
+	AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
+	CFLAGS += -DGEKKO -DHW_RVL -DWIIU -mwup -mcpu=750 -meabi -mhard-float -D__ppc__ -DMSB_FIRST -I$(DEVKITPRO)/libogc/include
+	CFLAGS += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
+	STATIC_LINKING = 1
+
 # Emscripten
 else ifeq ($(platform), emscripten)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).bc
-   STATIC_LINKING = 1
+	STATIC_LINKING = 1
 
 # Windows MSVC 2003 Xbox 1
 else ifeq ($(platform), xbox1_msvc2003)
