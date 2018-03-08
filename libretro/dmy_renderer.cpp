@@ -38,6 +38,8 @@ extern retro_environment_t environ_cb;
 
 extern bool gblink_enable;
 
+extern int audio_2p_mode;
+
 #define MSG_FRAMES 60
 #define SAMPLES_PER_FRAME (44100/60)
 
@@ -115,7 +117,6 @@ word dmy_renderer::unmap_color(word gb_col)
 void dmy_renderer::refresh() {
 	static int16_t stream[SAMPLES_PER_FRAME*2];
 
-	static int audio_2p_mode = 0;
 	struct retro_message audio_2p_mode_descriptions[] = {
 		{ "Audio: only playing P1",   MSG_FRAMES },
 		{ "Audio: only playing P2",   MSG_FRAMES },
@@ -154,19 +155,8 @@ void dmy_renderer::refresh() {
          if ( button_pressed(0, RETRO_DEVICE_ID_JOYPAD_X) ) {
          _screen_2p_vertical = ! _screen_2p_vertical;
          }*/
-         // switch the playback mode with L/R
-         if (button_pressed(0, RETRO_DEVICE_ID_JOYPAD_L))
-            --audio_2p_mode;
-         else if (button_pressed(0, RETRO_DEVICE_ID_JOYPAD_R))
-            ++audio_2p_mode;
-         else
-            goto no_change;
          audio_2p_mode &= 3;
          memset(stream, 0, sizeof(stream));
-         environ_cb( RETRO_ENVIRONMENT_SET_MESSAGE,
-               &audio_2p_mode_descriptions[audio_2p_mode] );
-no_change:
-         ;
       }
    }
    else
