@@ -117,13 +117,6 @@ word dmy_renderer::unmap_color(word gb_col)
 void dmy_renderer::refresh() {
 	static int16_t stream[SAMPLES_PER_FRAME*2];
 
-	struct retro_message audio_2p_mode_descriptions[] = {
-		{ "Audio: only playing P1",   MSG_FRAMES },
-		{ "Audio: only playing P2",   MSG_FRAMES },
-		{ "Audio: P1 left, P2 right", MSG_FRAMES },
-		{ "Audio: silence",           MSG_FRAMES },
-	};
-
    if (g_gb[1] && gblink_enable)
    {
       // if dual gb mode
