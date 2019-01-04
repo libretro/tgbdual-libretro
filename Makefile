@@ -15,6 +15,8 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
 endif
 endif
 
+LIBS :=
+
 # system platform
 system_platform = unix
 ifeq ($(shell uname -a),)
@@ -535,7 +537,6 @@ ifndef ($(NOUNIVERSAL))
 endif
 endif
 
-LIBS :=
 
 OBJOUT   = -o
 LINKOUT  = -o 
