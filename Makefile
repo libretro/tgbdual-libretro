@@ -212,8 +212,11 @@ else ifeq ($(platform), ctr)
 	CC = $(DEVKITARM)/bin/arm-none-eabi-gcc$(EXE_EXT)
 	CXX = $(DEVKITARM)/bin/arm-none-eabi-g++$(EXE_EXT)
 	AR = $(DEVKITARM)/bin/arm-none-eabi-ar$(EXE_EXT)
+	FLAGS += -march=armv6k -mtune=mpcore -mfloat-abi=hard
+	FLAGS += -Wall -mword-relocations
+	FLAGS += -fomit-frame-pointer -ffast-math
+	FLAGS += -DARM11 -D_3DS
 	STATIC_LINKING = 1
-	FLAGS += -D_3DS
 
 # Nintendo Switch (libtransistor)
 else ifeq ($(platform), switch)
