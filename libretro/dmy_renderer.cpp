@@ -81,6 +81,7 @@ dmy_renderer::dmy_renderer(int which)
 
 word dmy_renderer::map_color(word gb_col)
 {
+#ifndef SKIP_COLOR_CORRECTION
 #ifndef FRONTEND_SUPPORTS_RGB565
    if(rgb565)
    {
@@ -95,10 +96,14 @@ word dmy_renderer::map_color(word gb_col)
       ((gb_col&0x03e0)      ) | 
       ((gb_col&0x7c00) >> 10);
 #endif
+#else
+   return gb_col;
+#endif
 }
 
 word dmy_renderer::unmap_color(word gb_col)
 {
+#ifndef SKIP_COLOR_CORRECTION
 #ifndef FRONTEND_SUPPORTS_RGB565
    if(rgb565)
    {
@@ -111,6 +116,9 @@ word dmy_renderer::unmap_color(word gb_col)
    return ((gb_col&0x001f) << 10) |
       ((gb_col&0x03e0)      ) | 
       ((gb_col&0x7c00) >> 10);
+#endif
+#else
+   return gb_col;
 #endif
 }
 
