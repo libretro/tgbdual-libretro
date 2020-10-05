@@ -306,18 +306,6 @@ void gb::restore_state_mem(void *buf)
 	serialize(s);
 }
 
-void gb::save_state(FILE *file)
-{
-	serializer s(file, serializer::SAVE_FILE);
-	serialize(s);
-}
-
-void gb::restore_state(FILE *file)
-{
-	serializer s(file, serializer::LOAD_FILE);
-	serialize(s);
-}
-
 void gb::refresh_pal()
 {
 	for (int i=0;i<64;i++)

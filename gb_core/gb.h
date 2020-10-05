@@ -20,7 +20,6 @@
 //--------------------------------------------------
 // GB クラス定義部,その他
 
-#include <stdio.h>
 #include <list>
 
 #include "gb_types.h"
@@ -194,8 +193,6 @@ public:
 	size_t get_state_size(void);
 	void save_state_mem(void *buf);
 	void restore_state_mem(void *buf);
-	void save_state(FILE *file);
-	void restore_state(FILE *file);
 
 	void refresh_pal();
 
@@ -255,9 +252,6 @@ public:
 	std::list<cheat_dat>::iterator get_end() { return cheat_list.end(); }
 
 	int *get_cheat_map() { return cheat_map; }
-
-	void save(FILE *file);
-	void load(FILE *file);
 
 private:
 	std::list<cheat_dat> cheat_list;
@@ -559,6 +553,4 @@ private:
 	byte *dma_dest_bank;
 
 	byte _ff6c,_ff72,_ff73,_ff74,_ff75;
-
-//	FILE *file;
 };
