@@ -3,7 +3,6 @@
 #endif
 
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "libretro.h"
 #include "../gb_core/gb.h"
