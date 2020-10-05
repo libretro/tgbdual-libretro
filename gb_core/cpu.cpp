@@ -29,8 +29,6 @@
 #define N_FLAG 0x02
 #define C_FLAG 0x01
 
-FILE *file;
-
 cpu::cpu(gb *ref)
 {
 	ref_gb=ref;
@@ -42,13 +40,10 @@ cpu::cpu(gb *ref)
 	}
 
 	reset();
-
-//	file=fopen("cpu_log.txt","w");
 }
 
 cpu::~cpu()
 {
-//	fclose(file);
 }
 
 void cpu::reset()

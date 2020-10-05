@@ -1,7 +1,6 @@
 #ifndef __SERIALIZER_H__
 #define __SERIALIZER_H__
 
-#include <stdio.h>
 #include <string.h>
 
 // convenience macros for common uses
@@ -13,7 +12,7 @@
 class serializer
 {
 public:
-	enum mode_t { COUNT, SAVE_BUF, LOAD_BUF, SAVE_FILE, LOAD_FILE };
+	enum mode_t { COUNT, SAVE_BUF, LOAD_BUF };
 	serializer(void *target, mode_t mode)
 	{
 		my_mode = mode;
@@ -33,12 +32,7 @@ public:
 				memcpy(data, my_target.buf, size);
 				my_target.buf += size;
 				return size;
-			case SAVE_FILE:
-				return fwrite(data, 1, size, my_target.file);
-			case LOAD_FILE:
-				return fread(data, 1, size, my_target.file);
 			default:
-				puts("ERROR: invalid serializer!");
 				break;
 		}
 		return 0;
@@ -49,7 +43,6 @@ private:
 		void *ptr;
 		size_t *counter;
 		unsigned char *buf;
-		FILE *file;
 	} my_target;
 };
 

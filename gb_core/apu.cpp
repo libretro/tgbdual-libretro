@@ -158,7 +158,6 @@ bool apu_snd::get_enable(int ch)
 {
 	return b_enable[ch];
 }
-	extern FILE *file;
 
 void apu_snd::process(word adr,byte dat)
 {
@@ -320,15 +319,6 @@ void apu_snd::process(word adr,byte dat)
 		stat.ch_on[3]=(dat>>3)&1;
 		break;
 	}
-
-//	voice_buffer[voice_count].time=clock;
-//	voice_buffer[voice_count].adr=ptr;
-//	voice_buffer[voice_count++].dat=dat;
-//	if (voice_count>0xfff)
-//		voice_count=0xfff;
-
-//	if ((adr>=0xff1a)&&(adr<=0xff26))
-//		fprintf(file,"[%04X] %02X\n",adr,dat);
 }
 
 static int sq_wav_dat[4][8]={
