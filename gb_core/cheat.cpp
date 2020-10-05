@@ -180,13 +180,16 @@ byte cheat::cheat_read(word adr)
 			case 0x96:
 			case 0x97:
 				if (tmp->adr==adr)
-					if ((adr>=0xD000)&&(adr<0xE000))
-						if (((ref_gb->get_cpu()->get_ram_bank()-ref_gb->get_cpu()->get_ram())/0x1000)==(tmp->code-0x90))
-							return tmp->dat;
-						else
-							tmp=NULL;
-					else
-						return tmp->dat;
+            {
+               if ((adr>=0xD000)&&(adr<0xE000))
+               {
+                  if (((ref_gb->get_cpu()->get_ram_bank()-ref_gb->get_cpu()->get_ram())/0x1000)==(tmp->code-0x90))
+                     return tmp->dat;
+                  tmp=NULL;
+               }
+               else
+                  return tmp->dat;
+            }
 				break;
 			}
 		}while(tmp);
