@@ -23,7 +23,7 @@
 
 #include "gb.h"
 
-#define ROL_BYTE(var, bits) (var = ((var) & (-1 << 8)) \
+#define ROL_BYTE(var, bits) (var = ((var) & (-1U << 8)) \
                              | (((var)<<(bits))&0xff) \
                              | ((var) >> (8-(bits))))
 
