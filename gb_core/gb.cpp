@@ -90,10 +90,6 @@ void gb::reset()
 	now_frame=0;
 	skip=skip_buf=0;
 	re_render=0;
-
-	char *gb_names[]={(char*)"Invalid", (char*)"Gameboy", (char*)"SuperGameboy", (char*)"Gameboy Color", (char*)"Gameboy Advance"};
-	if (m_rom->get_loaded())
-		m_renderer->output_log("Current GB Type : %s \n", gb_names[m_rom->get_info()->gb_type]);
 }
 
 void gb::hook_extport(ext_hook *ext)

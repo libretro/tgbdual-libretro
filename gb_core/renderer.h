@@ -51,8 +51,6 @@ public:
 
 	virtual void set_bibrate(bool bibrate)=0;
 
-	virtual void output_log(char *mes,...)=0;
-
 protected:
 	sound_renderer *snd_render;
 };

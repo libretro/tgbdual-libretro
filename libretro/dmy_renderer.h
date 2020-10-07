@@ -27,7 +27,6 @@ public:
 
 	virtual void reset() {}
 	virtual word get_sensor(bool x_y) { return 0; }
-	virtual void output_log(char *mes,...) {}
 	virtual void set_bibrate(bool bibrate) {}
 
 	virtual void render_screen(byte *buf,int width,int height,int depth);
