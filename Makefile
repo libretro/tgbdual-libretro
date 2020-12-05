@@ -110,8 +110,7 @@ endif
 ifeq ($(OSX_LT_MAVERICKS),"YES")
    fpic += -mmacosx-version-min=10.1
 else
-   fpic += -mmacosx-version-min=10.7
-	CXXFLAGS += -stdlib=libc++
+   fpic += -mmacosx-version-min=10.7 -stdlib=libc++
 endif
 
 # iOS
