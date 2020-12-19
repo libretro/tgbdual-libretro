@@ -172,26 +172,6 @@ else ifeq ($(platform), libnx)
     CFLAGS += -std=gnu11
     STATIC_LINKING = 1
 
-# PS3
-else ifeq ($(platform), ps3)
-   TARGET := $(TARGET_NAME)_libretro_$(platform).a
-   CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
-   CXX = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-g++.exe
-   AR = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ar.exe
-   STATIC_LINKING = 1
-	FLAGS += -DMSB_FIRST
-	OLD_GCC = 1
-
-# sncps3
-else ifeq ($(platform), sncps3)
-	TARGET := $(TARGET_NAME)_libretro_ps3.a
-	CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
-	CXX = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
-	AR = $(CELL_SDK)/host-win32/sn/bin/ps3snarl.exe
-	STATIC_LINKING = 1
-	FLAGS += -DMSB_FIRST
-	NO_GCC = 1
-
 # PS2
 else ifeq ($(platform), ps2)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).a
