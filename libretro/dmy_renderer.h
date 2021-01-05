@@ -38,7 +38,6 @@ public:
 	virtual void set_time(int type,byte dat);
 
 	dword fixed_time;
-	byte pad_state;
 private:
 	int cur_time;
 	int which_gb;
