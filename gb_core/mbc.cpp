@@ -759,7 +759,7 @@ void mbc::mmm01_write(word adr,byte dat)
 		case 0:
 			break;
 		case 1:
-			rom_page=ref_gb->get_rom()->get_rom()+0x4000*((dat&3)*0x10+(dat==0?1:dat)&0x0f&(rom_size_tbl[ref_gb->get_rom()->get_info()->rom_size]-1))-0x4000;
+			rom_page=ref_gb->get_rom()->get_rom()+0x4000*(((dat&3)*0x10+(dat==0?1:dat))&0x0f&(rom_size_tbl[ref_gb->get_rom()->get_info()->rom_size]-1))-0x4000;
 			break;
 		case 2:
 			ref_gb->get_rom()->set_first((dat&3)*0x10);

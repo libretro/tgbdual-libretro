@@ -149,9 +149,10 @@ void lcd::bg_render(void *buf,int scanline)
 	dat   -= 8;
 	trans -= 8;
 
-	for (i=0;i<8-(x&7);i++){ // スクロール補正
-		*(dat++)=*(dat+(x&7));
-		*(trans++)=*(dat+(x&7));
+	for (i=0;i<8-(x&7);i++){ // スクロール補正 // Scroll correction
+		*(dat)=*(dat+(x&7));
+		*(trans)=*(dat+(x&7));
+		dat++; trans++;
 	}
 
 	for (i=0;i<20;i++){
@@ -479,10 +480,11 @@ void lcd::bg_render_color(void *buf,int scanline)
 	trans-=8;
 	priority-=8;
 
-	for (i=0;i<8-(x&7);i++){ // スクロール補正
-		*(dat++)=*(dat+(x&7));
-		*(trans++)=*(trans+(x&7));
-		*(priority++)=*(priority+(x&7));
+	for (i=0;i<8-(x&7);i++){ // スクロール補正 // Scroll correction
+		*(dat)=*(dat+(x&7));
+		*(trans)=*(trans+(x&7));
+		*(priority)=*(priority+(x&7));
+		dat++; trans++; priority++;
 	}
 
 	for (i=0;i<20;i++){
