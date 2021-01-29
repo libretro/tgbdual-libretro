@@ -7,6 +7,9 @@ ifeq ($(shell uname -a),)
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
    platform = osx
 	arch = intel
+ifeq ($(shell uname -p),arm)
+	arch = arm
+endif
 ifeq ($(shell uname -p),powerpc)
 	arch = ppc
 endif
@@ -25,6 +28,9 @@ EXE_EXT = .exe
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
    system_platform = osx
 	arch = intel
+ifeq ($(shell uname -p),arm)
+	arch = ppc
+endif
 ifeq ($(shell uname -p),powerpc)
 	arch = ppc
 endif
@@ -38,13 +44,6 @@ ifneq ($(GIT_VERSION)," unknown")
 	CXXFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
 endif
 
-ifeq ($(ARCHFLAGS),)
-ifeq ($(archs),ppc)
-   ARCHFLAGS = -arch ppc -arch ppc64
-else
-   ARCHFLAGS = -arch i386 -arch x86_64
-endif
-endif
 
 SPACE :=
 SPACE := $(SPACE) $(SPACE)
@@ -101,17 +100,44 @@ else ifeq ($(platform), osx)
    fpic := -fPIC
    SHARED := -dynamiclib
 
+ifeq ($(UNIVERSAL),1)
+ifeq ($(ARCHFLAGS),)
+   ARCHFLAGS = -arch i386 -arch x86_64
+ifeq ($(archs),arm)
+   ARCHFLAGS = -arch arm64
+endif
+ifeq ($(archs),ppc)
+   ARCHFLAGS = -arch ppc -arch ppc64
+endif
+endif
+endif
+
 ifeq ($(arch),ppc)
 	FLAGS += -DMSB_FIRST
 	OLD_GCC = 1
 endif
    OSXVER = `sw_vers -productVersion | cut -d. -f 2`
    OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
+   MINVERSION=
 ifeq ($(OSX_LT_MAVERICKS),"YES")
-   fpic += -mmacosx-version-min=10.1
+   MINVERSION = -mmacosx-version-min=10.1
 else
-   fpic += -mmacosx-version-min=10.7 -stdlib=libc++
+   MINVERSION = -mmacosx-version-min=10.7
 endif
+ifeq ($(shell uname -p),arm)
+   MINVERSION =
+endif
+
+   ifeq ($(CROSS_COMPILE),1)
+	TARGET_RULE   = -target $(LIBRETRO_APPLE_PLATFORM) -isysroot $(LIBRETRO_APPLE_ISYSROOT)
+	CFLAGS   += $(TARGET_RULE)
+	CPPFLAGS += $(TARGET_RULE)
+	CXXFLAGS += $(TARGET_RULE)
+	LDFLAGS  += $(TARGET_RULE)
+	MINVERSION =
+   endif
+   
+   fpic += $(MINVERSION) -stdlib=libc++
 
 # iOS
 else ifneq (,$(findstring ios,$(platform)))
