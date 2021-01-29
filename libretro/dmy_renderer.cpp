@@ -46,6 +46,7 @@ bool _screen_2p_vertical = false;
 bool _screen_switched = false; // set to draw player 2 on the left/top
 int _show_player_screens = 2; // 0 = p1 only, 1 = p2 only, 2 = both players
 
+#if 0
 static inline bool button_pressed(int pad, int btn)
 {
    static bool held[16] = {
@@ -64,6 +65,7 @@ static inline bool button_pressed(int pad, int btn)
       held[btn] = false;
    return false;
 }
+#endif
 
 dmy_renderer::dmy_renderer(int which)
 {
@@ -148,13 +150,13 @@ void dmy_renderer::refresh() {
          // only do audio callback after both gb's are rendered.
          audio_batch_cb(stream, SAMPLES_PER_FRAME);
 
-         /*
+#if 0
          // switch screen orientation with X button
          // this isn't enough to make retroarch change resolutions on the fly,
          // even if the values returned by get_system_av_info change as well.
-         if ( button_pressed(0, RETRO_DEVICE_ID_JOYPAD_X) ) {
+         if ( button_pressed(0, RETRO_DEVICE_ID_JOYPAD_X) )
          _screen_2p_vertical = ! _screen_2p_vertical;
-         }*/
+#endif
          audio_2p_mode &= 3;
          memset(stream, 0, sizeof(stream));
       }

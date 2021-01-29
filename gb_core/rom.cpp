@@ -56,9 +56,6 @@ int rom::get_sram_size()
 
 bool rom::load_rom(byte *buf,int size,byte *ram,int ram_size)
 {
-	int tbl[]={2,4,8,16,32,64,128,256,512};
-	int has_bat[]={0,0,0,1,0,0,1,0,0,1,0,0,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,1,0,1,1,0};//0x20以下
-
 	byte momocol_title[16]={0x4D,0x4F,0x4D,0x4F,0x43,0x4F,0x4C,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 
 	if (b_loaded){
@@ -77,7 +74,6 @@ bool rom::load_rom(byte *buf,int size,byte *ram,int ram_size)
 		info.cart_type=0x100;//mmm01
 	}
 
-	word tmp=(buf[0x14E]<<8)|buf[0x14F];
 	byte tmp2=buf[0x143];
 
 	info.gb_type=(tmp2&0x80)?3:1;
@@ -88,8 +84,6 @@ bool rom::load_rom(byte *buf,int size,byte *ram,int ram_size)
 	dat=(byte*)malloc(size);
 	memcpy(dat,buf,size);
 	first_page=dat;
-
-	word sum=0;
 
 	sram=(byte*)malloc(get_sram_size());
 	if (ram)

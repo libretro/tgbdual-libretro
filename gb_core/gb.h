@@ -458,7 +458,6 @@ public:
 
 	void serialize(serializer &s);
 private:
-	gb *ref_gb;
 	rom_info info;
 
 	byte *dat;

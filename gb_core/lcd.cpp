@@ -414,7 +414,6 @@ void lcd::bg_render_color(void *buf,int scanline)
 	dat=((word*)buf)+scanline*160;
 
 	int start=ref_gb->get_regs()->SCX>>3;
-	int end=(start+20>32)?32:(start+21);
 	int y_div_8=y>>3;
 	int prefix=0;
 	byte *now_tile=vrams[0]+back+((y_div_8)<<5)+start;

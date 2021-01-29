@@ -122,7 +122,6 @@ bool gb::load_rom(byte *buf,int size,byte *ram,int ram_size)
 void gb::serialize_legacy(serializer &s)
 {
 	int tbl_ram[]={1,1,1,4,16,8};
-	int has_bat[]={0,0,0,1,0,0,1,0,0,1,0,0,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,1,0,1,1,0};
 
 	s.process(&m_rom->get_info()->gb_type, sizeof(int));
 	bool gbc = m_rom->get_info()->gb_type >= 3; // GB: 1, SGB: 2, GBC: 3...
@@ -211,7 +210,6 @@ void gb::serialize_legacy(serializer &s)
 void gb::serialize_firstrev(serializer &s)
 {
 	int tbl_ram[]={1,1,1,4,16,8};
-	int has_bat[]={0,0,0,1,0,0,1,0,0,1,0,0,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,1,0,1,1,0};
 
 	s.process(&m_rom->get_info()->gb_type, sizeof(int));
 	bool gbc = m_rom->get_info()->gb_type >= 3; // GB: 1, SGB: 2, GBC: 3...
