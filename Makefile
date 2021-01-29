@@ -112,7 +112,7 @@ endif
 endif
 endif
 
-ifeq ($(arch),ppc)
+ifeq ($(shell uname -p),powerpc)
 	FLAGS += -DMSB_FIRST
 	OLD_GCC = 1
 endif
