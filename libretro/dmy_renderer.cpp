@@ -29,6 +29,7 @@
 
 extern gb *g_gb[2];
 
+extern retro_log_printf_t log_cb;
 extern retro_video_refresh_t video_cb;
 extern retro_audio_sample_batch_t audio_batch_cb;
 extern retro_input_poll_t input_poll_cb;
@@ -44,39 +45,19 @@ extern int audio_2p_mode;
 
 bool _screen_2p_vertical = false;
 bool _screen_switched = false; // set to draw player 2 on the left/top
+extern bool libretro_supports_bitmasks;
 int _show_player_screens = 2; // 0 = p1 only, 1 = p2 only, 2 = both players
-
-#if 0
-static inline bool button_pressed(int pad, int btn)
-{
-   static bool held[16] = {
-      false, false, false, false, false, false, false, false,
-      false, false, false, false, false, false, false, false,
-   };
-   if ( input_state_cb(pad, 1,0, btn) )
-   {
-      if ( ! held[btn] )
-      {
-         held[btn] = true;
-         return true;
-      }
-   }
-   else
-      held[btn] = false;
-   return false;
-}
-#endif
 
 dmy_renderer::dmy_renderer(int which)
 {
-	which_gb = which;
+   which_gb = which;
 
-	retro_pixel_format pixfmt = RETRO_PIXEL_FORMAT_RGB565;
-	rgb565 = environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixfmt);
+   retro_pixel_format pixfmt = RETRO_PIXEL_FORMAT_RGB565;
+   rgb565 = environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixfmt);
 
 #ifndef FRONTEND_SUPPORTS_RGB565
-	if (rgb565)
-		puts("Frontend supports RGB565; will use that instead of XRGB1555.");
+   if (rgb565 && log_cb)
+      log_cb(RETRO_LOG_INFO, "Frontend supports RGB565; will use that instead of XRGB1555.\n");
 #endif
 }
 
@@ -94,7 +75,7 @@ word dmy_renderer::map_color(word gb_col)
 #ifndef FRONTEND_SUPPORTS_RGB565
    }
    return ((gb_col&0x001f) << 10) |
-      ((gb_col&0x03e0)      ) | 
+      ((gb_col&0x03e0)      ) |
       ((gb_col&0x7c00) >> 10);
 #endif
 #else
@@ -115,7 +96,7 @@ word dmy_renderer::unmap_color(word gb_col)
 #ifndef FRONTEND_SUPPORTS_RGB565
    }
    return ((gb_col&0x001f) << 10) |
-      ((gb_col&0x03e0)      ) | 
+      ((gb_col&0x03e0)      ) |
       ((gb_col&0x7c00) >> 10);
 #endif
 #else
@@ -124,7 +105,7 @@ word dmy_renderer::unmap_color(word gb_col)
 }
 
 void dmy_renderer::refresh() {
-	static int16_t stream[SAMPLES_PER_FRAME*2];
+   static int16_t stream[SAMPLES_PER_FRAME*2];
 
    if (g_gb[1] && gblink_enable)
    {
@@ -150,38 +131,41 @@ void dmy_renderer::refresh() {
          // only do audio callback after both gb's are rendered.
          audio_batch_cb(stream, SAMPLES_PER_FRAME);
 
-#if 0
-         // switch screen orientation with X button
-         // this isn't enough to make retroarch change resolutions on the fly,
-         // even if the values returned by get_system_av_info change as well.
-         if ( button_pressed(0, RETRO_DEVICE_ID_JOYPAD_X) )
-         _screen_2p_vertical = ! _screen_2p_vertical;
-#endif
          audio_2p_mode &= 3;
          memset(stream, 0, sizeof(stream));
       }
    }
    else
    {
-		this->snd_render->render(stream, SAMPLES_PER_FRAME);
-		audio_batch_cb(stream, SAMPLES_PER_FRAME);
-	}
-	fixed_time = time(NULL);
+      this->snd_render->render(stream, SAMPLES_PER_FRAME);
+      audio_batch_cb(stream, SAMPLES_PER_FRAME);
+   }
+   fixed_time = time(NULL);
 }
 
 int dmy_renderer::check_pad()
 {
-	// update pad state: a,b,select,start,down,up,left,right
-	pad_state =
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_A)     ) << 0 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_B)     ) << 1 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_SELECT)) << 2 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_START) ) << 3 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_DOWN)  ) << 4 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_UP)    ) << 5 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_LEFT)  ) << 6 |
-	(!!input_state_cb(which_gb,1,0, RETRO_DEVICE_ID_JOYPAD_RIGHT) ) << 7;
-	return pad_state;
+   int16_t joypad_bits;
+   if (libretro_supports_bitmasks)
+      joypad_bits = input_state_cb(which_gb, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+   else
+   {
+      unsigned i;
+      joypad_bits = 0;
+      for (i = 0; i < (RETRO_DEVICE_ID_JOYPAD_R3 + 1); i++)
+         joypad_bits |= input_state_cb(which_gb, RETRO_DEVICE_JOYPAD, 0, i) ? (1 << i) : 0;
+   }
+
+   // update pad state: a,b,select,start,down,up,left,right
+   return
+      ((joypad_bits & (1 << RETRO_DEVICE_ID_JOYPAD_A))      ? 1 : 0) << 0 |
+      ((joypad_bits & (1 << RETRO_DEVICE_ID_JOYPAD_B))      ? 1 : 0) << 1 |
+      ((joypad_bits & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT)) ? 1 : 0) << 2 |
+      ((joypad_bits & (1 << RETRO_DEVICE_ID_JOYPAD_START))  ? 1 : 0) << 3 |
+      ((joypad_bits & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))   ? 1 : 0) << 4 |
+      ((joypad_bits & (1 << RETRO_DEVICE_ID_JOYPAD_UP))     ? 1 : 0) << 5 |
+      ((joypad_bits & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))   ? 1 : 0) << 6 |
+      ((joypad_bits & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))  ? 1 : 0) << 7;
 }
 
 void dmy_renderer::render_screen(byte *buf,int width,int height,int depth)

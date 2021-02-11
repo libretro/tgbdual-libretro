@@ -75,6 +75,7 @@ bool gblink_enable = false;
 int audio_2p_mode = 0;
 // used to make certain core options only take effect once on core startup
 bool already_checked_options = false;
+bool libretro_supports_bitmasks = false;
 struct retro_system_av_info *my_av_info = (retro_system_av_info*)malloc(sizeof(*my_av_info));
 
 void retro_get_system_info(struct retro_system_info *info)
@@ -85,7 +86,7 @@ void retro_get_system_info(struct retro_system_info *info)
 #endif
    info->library_version = "v0.8.3" GIT_VERSION;
    info->need_fullpath = false;
-   info->valid_extensions = "gb|gbc|sgb";
+   info->valid_extensions = "gb|dmg|gbc|cgb|sgb";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
@@ -124,10 +125,14 @@ void retro_init(void)
       log_cb = NULL;
 
    environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
+      libretro_supports_bitmasks = true;
 }
 
 void retro_deinit(void)
 {
+   libretro_supports_bitmasks = false;
 }
 
 static void check_variables(void)
