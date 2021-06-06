@@ -184,7 +184,7 @@ public:
 	void reset();
 	void set_skip(int frame);
 	void set_use_gba(bool use) { use_gba=use; }
-	bool load_rom(byte *buf,int size,byte *ram,int ram_size);
+	bool load_rom(byte *buf,int size,byte *ram,int ram_size, bool persistent);
 
 	void serialize(serializer &s);
 	void serialize_firstrev(serializer &s);
@@ -454,7 +454,7 @@ public:
 
 	void set_first(int page) { first_page=dat+0x4000*page; }
 
-	bool load_rom(byte *buf,int size,byte *ram,int ram_size);
+	bool load_rom(byte *buf,int size,byte *ram,int ram_size, bool persistent);
 
 	void serialize(serializer &s);
 private:
@@ -466,6 +466,7 @@ private:
 	byte *first_page;
 
 	bool b_loaded;
+   bool b_persistent;
 };
 
 class cpu

@@ -26,15 +26,17 @@
 
 rom::rom()
 {
-	b_loaded=false;
+	b_loaded     = false;
+   b_persistent = false;
 
-	dat=NULL;
-	sram=NULL;
+	dat          = NULL;
+	sram         = NULL;
 }
 
 rom::~rom()
 {
-	free(dat);
+   if (!b_persistent)
+      free(dat);
 	free(sram);
 }
 
@@ -54,12 +56,13 @@ int rom::get_sram_size()
 	return 0x2000*tbl_ram[info.ram_size];
 }
 
-bool rom::load_rom(byte *buf,int size,byte *ram,int ram_size)
+bool rom::load_rom(byte *buf,int size,byte *ram,int ram_size, bool persistent)
 {
 	byte momocol_title[16]={0x4D,0x4F,0x4D,0x4F,0x43,0x4F,0x4C,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 
 	if (b_loaded){
-		free(dat);
+      if (!persistent)
+         free(dat);
 		free(sram);
 	}
 
@@ -81,15 +84,21 @@ bool rom::load_rom(byte *buf,int size,byte *ram,int ram_size)
 	if (info.rom_size>8)
 		return false;
 
-	dat=(byte*)malloc(size);
-	memcpy(dat,buf,size);
+   if (persistent)
+      dat = (byte*)buf;
+   else
+   {
+      dat=(byte*)malloc(size);
+      memcpy(dat,buf,size);
+   }
 	first_page=dat;
 
 	sram=(byte*)malloc(get_sram_size());
 	if (ram)
 		memcpy(sram,ram,ram_size&0xffffff00);
 
-	b_loaded=true;
+	b_loaded     = true;
+   b_persistent = persistent;
 
 	return true;
 }

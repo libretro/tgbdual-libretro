@@ -108,9 +108,9 @@ void gb::set_skip(int frame)
 	skip_buf=frame;
 }
 
-bool gb::load_rom(byte *buf,int size,byte *ram,int ram_size)
+bool gb::load_rom(byte *buf,int size,byte *ram,int ram_size, bool persistent)
 {
-	if (m_rom->load_rom(buf,size,ram,ram_size))
+	if (m_rom->load_rom(buf,size,ram,ram_size, persistent))
    {
 		reset();
 		return true;

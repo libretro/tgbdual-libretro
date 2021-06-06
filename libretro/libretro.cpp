@@ -67,25 +67,27 @@ retro_environment_t environ_cb;
 retro_input_poll_t input_poll_cb;
 retro_input_state_t input_state_cb;
 
-static size_t _serialize_size[2] = { 0, 0 };
 extern bool _screen_2p_vertical;
 extern bool _screen_switched;
 extern int _show_player_screens;
-bool gblink_enable = false;
-int audio_2p_mode = 0;
+static size_t _serialize_size[2]         = { 0, 0 };
+
+bool gblink_enable                       = false;
+int audio_2p_mode                        = 0;
 // used to make certain core options only take effect once on core startup
-bool already_checked_options = false;
-bool libretro_supports_bitmasks = false;
-struct retro_system_av_info *my_av_info = (retro_system_av_info*)malloc(sizeof(*my_av_info));
+bool already_checked_options             = false;
+bool libretro_supports_persistent_buffer = false;
+bool libretro_supports_bitmasks          = false;
+struct retro_system_av_info *my_av_info  = (retro_system_av_info*)malloc(sizeof(*my_av_info));
 
 void retro_get_system_info(struct retro_system_info *info)
 {
-   info->library_name = "TGB Dual";
+   info->library_name     = "TGB Dual";
 #ifndef GIT_VERSION
 #define GIT_VERSION ""
 #endif
-   info->library_version = "v0.8.3" GIT_VERSION;
-   info->need_fullpath = false;
+   info->library_version  = "v0.8.3" GIT_VERSION;
+   info->need_fullpath    = false;
    info->valid_extensions = "gb|dmg|gbc|cgb|sgb";
 }
 
@@ -104,10 +106,10 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
          w *= 2;
    }
 
-   info->timing.fps = 4194304.0 / 70224.0;
-   info->timing.sample_rate = 44100.0f;
-   info->geometry.base_width = w;
-   info->geometry.base_height = h;
+   info->timing.fps            = 4194304.0 / 70224.0;
+   info->timing.sample_rate    = 44100.0f;
+   info->geometry.base_width   = w;
+   info->geometry.base_height  = h;
    info->geometry.aspect_ratio = float(w) / float(h);
    memcpy(my_av_info, info, sizeof(*my_av_info));
 }
@@ -132,7 +134,7 @@ void retro_init(void)
 
 void retro_deinit(void)
 {
-   libretro_supports_bitmasks = false;
+   libretro_supports_bitmasks          = false;
 }
 
 static void check_variables(void)
@@ -227,6 +229,9 @@ static void check_variables(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
+   size_t rom_size;
+   byte *rom_data;
+   const struct retro_game_info_ext *info_ext = NULL;
    environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void *)vars_single);
    check_variables();
 
@@ -267,7 +272,22 @@ bool retro_load_game(const struct retro_game_info *info)
 
    render[0] = new dmy_renderer(0);
    g_gb[0]   = new gb(render[0], true, true);
-   if (!g_gb[0]->load_rom((byte*)info->data, info->size, NULL, 0))
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &info_ext) &&
+       info_ext->persistent_data)
+   {
+      rom_data                            = (byte*)info_ext->data;
+      rom_size                            = info_ext->size;
+      libretro_supports_persistent_buffer = true;
+   }
+   else
+   {
+      rom_data                            = (byte*)info->data;
+      rom_size                            = info->size;
+   }
+
+   if (!g_gb[0]->load_rom(rom_data, rom_size, NULL, 0,
+            libretro_supports_persistent_buffer))
       return false;
 
    for (i = 0; i < 2; i++)
@@ -275,13 +295,14 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (gblink_enable)
    {
-      mode = MODE_SINGLE_GAME_DUAL;
+      mode      = MODE_SINGLE_GAME_DUAL;
       environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void *)vars_dual);
 
       render[1] = new dmy_renderer(1);
-      g_gb[1] = new gb(render[1], true, true);
+      g_gb[1]   = new gb(render[1], true, true);
 
-      if (!g_gb[1]->load_rom((byte*)info->data, info->size, NULL, 0))
+      if (!g_gb[1]->load_rom(rom_data, rom_size, NULL, 0,
+               libretro_supports_persistent_buffer))
          return false;
 
       // for link cables and IR:
@@ -299,7 +320,6 @@ bool retro_load_game(const struct retro_game_info *info)
 
 bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num_info)
 {
-
     if (type != RETRO_GAME_TYPE_GAMEBOY_LINK_2P)
         return false; /* all other types are unhandled for now */
 
@@ -347,7 +367,7 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 
    render[0] = new dmy_renderer(0);
    g_gb[0]   = new gb(render[0], true, true);
-   if (!g_gb[0]->load_rom((byte*)info[0].data, info[0].size, NULL, 0))
+   if (!g_gb[0]->load_rom((byte*)info[0].data, info[0].size, NULL, 0, false))
       return false;
 
    for (i = 0; i < 2; i++)
@@ -358,7 +378,8 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
       render[1] = new dmy_renderer(1);
       g_gb[1] = new gb(render[1], true, true);
 
-      if (!g_gb[1]->load_rom((byte*)info[1].data, info[1].size, NULL, 0))
+      if (!g_gb[1]->load_rom((byte*)info[1].data, info[1].size, NULL, 0,
+               false))
          return false;
 
       // for link cables and IR:
@@ -385,6 +406,7 @@ void retro_unload_game(void)
       }
    }
    free(my_av_info);
+   libretro_supports_persistent_buffer = false;
 }
 
 void retro_reset(void)
@@ -645,8 +667,19 @@ void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 
 void retro_set_environment(retro_environment_t cb)
 {
+   static const struct retro_system_content_info_override content_overrides[] = {
+      {
+         "gb|dmg|gbc|cgb|sgb", /* extensions */
+         false,    /* need_fullpath */
+         true      /* persistent_data */
+      },
+      { NULL, false, false }
+   };
    environ_cb = cb;
    cb(RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO, (void*)subsystems);
+   /* Request a persistent content data buffer */
+   cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE,
+         (void*)content_overrides);
 }
 
 // end boilerplate
