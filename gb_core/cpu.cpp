@@ -503,8 +503,6 @@ void cpu::io_write(word adr,byte dat)
 			speed_change=dat&1;
 			return;
 		case 0xFF4F://VBK(内部VRAMバンク切り替え) // VBK (VRAM internal bank switching)
-			if (dma_executing)
-				return;
 			vram_bank=vram+0x2000*(dat&0x01);
 			ref_gb->get_cregs()->VBK=dat;//&0x01;
 			return;
