@@ -81,14 +81,15 @@ void cheat::create_unique_name(char *buf)
 	int num;
 	bool end=false;
 	// "cheat_" (6) + INT_MIN as -2147483648 (11) + NUL (1) = 18 bytes
-	// worst case. Bump to 24 so neither -Wformat-overflow nor
-	// -Wformat-truncation can fire on the format below.
+	// worst case. Sized to 24 so plain sprintf is provably safe and
+	// no -Wformat-overflow warning can fire - which keeps us off the
+	// snprintf path (MSVC < 2015 / cl.exe 16.x doesn't have snprintf).
 	char tmp[24];
 	std::list<cheat_dat>::iterator ite;
 
 	for (num=0;!end;num++){
 		end=true;
-		snprintf(tmp,sizeof(tmp),"cheat_%03d",num);
+		sprintf(tmp,"cheat_%03d",num);
 		for (ite=cheat_list.begin();ite!=cheat_list.end();ite++)
 			if (strcmp(ite->name,tmp)==0)
 				end=false;
