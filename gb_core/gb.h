@@ -63,9 +63,18 @@ struct gbc_regs {
 	byte KEY1,VBK,HDMA1,HDMA2,HDMA3,HDMA4,HDMA5,RP,BCPS,BCPD,OCPS,OCPD,SVBK;
 };
 
+// Half-byte aliases of a 16-bit register. The Game Boy stores AF/BC/DE/HL
+// such that the "high" byte is the named upper register (A, B, D, H) and
+// the "low" byte is the lower (F, C, E, L). To keep `b.h` and `b.l` mapped
+// to the same logical halves of `w` regardless of host endianness, we
+// reorder the struct fields on big-endian hosts.
 union pare_reg {
 	word w;
+#ifdef MSB_FIRST
+	struct{byte h,l;}b;
+#else
 	struct{byte l,h;}b;
+#endif
 };
 
 struct cpu_regs {

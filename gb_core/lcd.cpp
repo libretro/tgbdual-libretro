@@ -116,7 +116,11 @@ void lcd::bg_render(void *buf,int scanline)
 	now_pat=(word*)(vrams[0]+pat+((y&7)<<1));
 
 	tile=*(now_tile++);
-	tmp_dat=(tile&0x80)?*(now_share+(tile<<3)):*(now_pat+(tile<<3));
+	// VRAM is little-endian by hardware spec; on BE hosts the
+	// `*(word*)` aliasing read swaps the bitplane bytes, so the
+	// pixel decoder below misinterprets them. LE16_HOST_SWAP is
+	// a no-op on LE.
+	tmp_dat=LE16_HOST_SWAP((tile&0x80)?*(now_share+(tile<<3)):*(now_pat+(tile<<3)));
 	calc1=tmp_dat;
 	calc2=tmp_dat>>7;
 	calc1&=0x55;
@@ -161,7 +165,7 @@ void lcd::bg_render(void *buf,int scanline)
 			prefix=256;
 		}
 		tile=*(now_tile++);
-		tmp_dat=(tile&0x80)?*(now_share+(tile<<3)):*(now_pat+(tile<<3));
+		tmp_dat=LE16_HOST_SWAP((tile&0x80)?*(now_share+(tile<<3)):*(now_pat+(tile<<3)));
 		calc1=tmp_dat;
 		calc2=tmp_dat>>7;
 		calc1&=0x55;
@@ -227,7 +231,7 @@ void lcd::win_render(void *buf,int scanline)
 
 	for (i=ref_gb->get_regs()->WX>>3;i<21;i++){
 		tile=*(now_tile++);
-		tmp_dat=(tile&0x80)?*(now_share+(tile<<3)):*(now_pat+(tile<<3));
+		tmp_dat=LE16_HOST_SWAP((tile&0x80)?*(now_share+(tile<<3)):*(now_pat+(tile<<3)));
 		calc1=tmp_dat;
 		calc2=tmp_dat>>7;
 		calc1&=0x55;
@@ -297,11 +301,11 @@ void lcd::sprite_render(void *buf,int scanline)
 			if (scanline-y+15<8)
          {
 				now= (atr & 0x40) ? ((y-scanline) & 7) : ((7 - (y - scanline)) & 7);
-				tmp_dat=*(word*)(vram+(tile&0xfe)*16+now*2+((atr&0x40)?16:0));
+				tmp_dat=LE16_HOST_SWAP(*(word*)(vram+(tile&0xfe)*16+now*2+((atr&0x40)?16:0)));
 			}
 			else{
 				now= (atr & 0x40) ? ((y-scanline) & 7) : ((7-(y-scanline)) & 7);
-				tmp_dat=*(word*)(vram+(tile&0xfe)*16+now*2+((atr&0x40)?0:16));
+				tmp_dat=LE16_HOST_SWAP(*(word*)(vram+(tile&0xfe)*16+now*2+((atr&0x40)?0:16)));
 			}
 		}
 		else{
@@ -310,7 +314,7 @@ void lcd::sprite_render(void *buf,int scanline)
 			if ((x==-8&&y==-16)||(x>160)||(y>144+7)||(y<scanline)||(y>scanline+7))
 				continue;
 			now=(atr&0x40)?((y-scanline)&7):((7-(y-scanline)) & 7);
-			tmp_dat=*(word*)(vram+tile*16+now*2);
+			tmp_dat=LE16_HOST_SWAP(*(word*)(vram+tile*16+now*2));
 		}
 		sprite_count++;
 		now_pos=sdat+x;
@@ -435,7 +439,7 @@ void lcd::bg_render_color(void *buf,int scanline)
 
 	pal=mapped_pal[atr&7];
 	bank=(atr<<9)&0x1000;
-	tmp_dat=(tile&0x80)?*(((atr&0x40)?now_share2:now_share)+(tile<<3)+bank):*(((atr&0x40)?now_pat2:now_pat)+(tile<<3)+bank);
+	tmp_dat=LE16_HOST_SWAP((tile&0x80)?*(((atr&0x40)?now_share2:now_share)+(tile<<3)+bank):*(((atr&0x40)?now_pat2:now_pat)+(tile<<3)+bank));
 	calc1=tmp_dat;
 	calc2=tmp_dat>>7;
 	calc1&=0x55;
@@ -499,7 +503,7 @@ void lcd::bg_render_color(void *buf,int scanline)
 
 		pal=mapped_pal[atr&7];
 		bank=(atr<<9)&0x1000;
-		tmp_dat=(tile&0x80)?*(((atr&0x40)?now_share2:now_share)+(tile<<3)+bank):*(((atr&0x40)?now_pat2:now_pat)+(tile<<3)+bank);
+		tmp_dat=LE16_HOST_SWAP((tile&0x80)?*(((atr&0x40)?now_share2:now_share)+(tile<<3)+bank):*(((atr&0x40)?now_pat2:now_pat)+(tile<<3)+bank));
 
 		calc1=tmp_dat;
 		calc2=tmp_dat>>7;
@@ -589,7 +593,7 @@ void lcd::win_render_color(void *buf,int scanline)
 		atr=*(now_atr++);
 		bank=(atr<<9)&0x1000;
 		pal=mapped_pal[atr&7];
-		tmp_dat=(tile&0x80)?*(((atr&0x40)?now_share2:now_share)+(tile<<3)+bank):*(((atr&0x40)?now_pat2:now_pat)+(tile<<3)+bank);
+		tmp_dat=LE16_HOST_SWAP((tile&0x80)?*(((atr&0x40)?now_share2:now_share)+(tile<<3)+bank):*(((atr&0x40)?now_pat2:now_pat)+(tile<<3)+bank));
 		calc1=tmp_dat;
 		calc2=tmp_dat>>7;
 		calc1&=0x55;
@@ -661,11 +665,11 @@ void lcd::sprite_render_color(void *buf,int scanline)
 
 			if (scanline-y+15<8){ //上半分
 				now=(atr&0x40)?((y-scanline)&7):((7-(y-scanline)) &7);
-				tmp_dat=*(word*)(vram+bank+(tile&0xfe)*16+now*2+((atr&0x40)?16:0));
+				tmp_dat=LE16_HOST_SWAP(*(word*)(vram+bank+(tile&0xfe)*16+now*2+((atr&0x40)?16:0)));
 			}
 			else{ // 下半分
 				now=(atr&0x40)?((y-scanline)&7):((7-(y-scanline)) &7);
-				tmp_dat=*(word*)(vram+bank+(tile&0xfe)*16+now*2+((atr&0x40)?0:16));
+				tmp_dat=LE16_HOST_SWAP(*(word*)(vram+bank+(tile&0xfe)*16+now*2+((atr&0x40)?0:16)));
 			}
 		}
 		else{ // 8*8
@@ -675,7 +679,7 @@ void lcd::sprite_render_color(void *buf,int scanline)
 				continue;
 
 			now=(atr&0x40)?((y-scanline)&7):((7-(y-scanline)) & 7);
-			tmp_dat=*(word*)(vram+tile*16+now*2+bank);
+			tmp_dat=LE16_HOST_SWAP(*(word*)(vram+tile*16+now*2+bank));
 		}
 		sprite_count++;
 		now_pos=sdat+x; // now_pos=現在地点

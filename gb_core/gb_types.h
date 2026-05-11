@@ -33,4 +33,32 @@ typedef uint8_t  byte;
 typedef uint16_t word;
 typedef uint32_t dword;
 
+// -----------------------------------------------------------------
+// Endianness
+// -----------------------------------------------------------------
+// Define MSB_FIRST when building for a big-endian host; otherwise
+// little-endian is assumed (matches every libretro target we ship
+// for in practice: x86, x86_64, ARM, AArch64, PPC64LE, RISC-V).
+//
+// LE16_LOAD(p) reads a little-endian 16-bit value from a byte
+// pointer, regardless of host endianness. It is the safe way to
+// read 16-bit values out of Game Boy VRAM (which has a hardware-
+// fixed little-endian byte layout), because the legacy
+// `*(word*)p` pattern only works when host endianness == LE.
+//
+// LE16_HOST_SWAP(w) converts a value loaded host-natively from
+// VRAM back to the GB's logical 16-bit pixel-row layout.
+// -----------------------------------------------------------------
+static inline word LE16_LOAD(const byte *p) {
+	return (word)((word)p[0] | ((word)p[1] << 8));
+}
+
+#ifdef MSB_FIRST
+static inline word LE16_HOST_SWAP(word w) {
+	return (word)((w >> 8) | (w << 8));
+}
+#else
+static inline word LE16_HOST_SWAP(word w) { return w; }
+#endif
+
 #endif
