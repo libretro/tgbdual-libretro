@@ -25,7 +25,7 @@ static const struct retro_variable vars_dual[] = {
     { "tgbdual_screen_placement", "Screen layout; left-right|top-down" },
     { "tgbdual_switch_screens", "Switch player screens; normal|switched" },
     { "tgbdual_single_screen_mp", "Show player screens; both players|player 1 only|player 2 only" },
-    { "tgbdual_audio_output", "Audio output; Game Boy #1|Game Boy #2" },
+    { "tgbdual_audio_output", "Audio output; Game Boy #1|Game Boy #2|Both (mixed)" },
     { NULL, NULL },
 };
 
@@ -78,7 +78,21 @@ int audio_2p_mode                        = 0;
 bool already_checked_options             = false;
 bool libretro_supports_persistent_buffer = false;
 bool libretro_supports_bitmasks          = false;
-struct retro_system_av_info *my_av_info;
+struct retro_system_av_info *my_av_info  = NULL;
+
+// Tear down both GBs and renderers. Used by retro_unload_game and by
+// the error-cleanup paths in retro_load_game[_special] - prior to
+// this audit, those paths leaked everything they had allocated
+// whenever load_rom failed partway through.
+static void cleanup_emulators(void)
+{
+   for (int i = 0; i < 2; ++i)
+   {
+      if (g_gb[i])   { delete g_gb[i];   g_gb[i]   = NULL; }
+      if (render[i]) { delete render[i]; render[i] = NULL; }
+      _serialize_size[i] = 0;
+   }
+}
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -111,7 +125,8 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.base_width   = w;
    info->geometry.base_height  = h;
    info->geometry.aspect_ratio = float(w) / float(h);
-   memcpy(my_av_info, info, sizeof(*my_av_info));
+   if (my_av_info)
+      memcpy(my_av_info, info, sizeof(*my_av_info));
 }
 
 
@@ -128,16 +143,30 @@ void retro_init(void)
 
    environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
 
-   my_av_info = (retro_system_av_info*)malloc(sizeof(*my_av_info));
+   // calloc so SET_GEOMETRY doesn't read indeterminate bytes if it
+   // fires before retro_get_system_av_info has filled the struct.
+   // Idempotent: re-init without intervening deinit doesn't leak.
+   if (!my_av_info)
+      my_av_info = (retro_system_av_info*)calloc(1, sizeof(*my_av_info));
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
       libretro_supports_bitmasks = true;
+
+   for (int i = 0; i < 2; ++i)
+   {
+      g_gb[i]   = NULL;
+      render[i] = NULL;
+   }
 }
 
 void retro_deinit(void)
 {
+   cleanup_emulators();
    free(my_av_info);
+   my_av_info                          = NULL;
    libretro_supports_bitmasks          = false;
+   libretro_supports_persistent_buffer = false;
+   already_checked_options             = false;
 }
 
 static void check_variables(void)
@@ -208,14 +237,17 @@ static void check_variables(void)
       else
          screenw *= 2;
    }
-   my_av_info->geometry.base_width = screenw;
-   my_av_info->geometry.base_height = screenh;
-   my_av_info->geometry.aspect_ratio = float(screenw) / float(screenh);
+   if (my_av_info)
+   {
+      my_av_info->geometry.base_width   = screenw;
+      my_av_info->geometry.base_height  = screenh;
+      my_av_info->geometry.aspect_ratio = float(screenw) / float(screenh);
+      environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, my_av_info);
+   }
 
    already_checked_options = true;
-   environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, my_av_info);
 
-   // check whether player 1 and 2's screen placements are swapped
+   // check audio output mode
    var.key = "tgbdual_audio_output";
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -224,9 +256,11 @@ static void check_variables(void)
          audio_2p_mode = 0;
       else if (!strcmp(var.value, "Game Boy #2"))
          audio_2p_mode = 1;
+      else if (!strcmp(var.value, "Both (mixed)"))
+         audio_2p_mode = 2;
    }
    else
-      _screen_switched = false;
+      audio_2p_mode = 0; // (was: `_screen_switched = false` - copy/paste bug)
 }
 
 
@@ -265,11 +299,9 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!info)
       return false;
 
-   for (i = 0; i < 2; i++)
-   {
-      g_gb[i]   = NULL;
-      render[i] = NULL;
-   }
+   // Defensive: if the frontend didn't unload first, free anything
+   // left from the previous load before we overwrite the pointers.
+   cleanup_emulators();
 
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
@@ -277,7 +309,7 @@ bool retro_load_game(const struct retro_game_info *info)
    g_gb[0]   = new gb(render[0], true, true);
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &info_ext) &&
-       info_ext->persistent_data)
+       info_ext && info_ext->persistent_data)
    {
       rom_data                            = (byte*)info_ext->data;
       rom_size                            = info_ext->size;
@@ -291,10 +323,10 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (!g_gb[0]->load_rom(rom_data, rom_size, NULL, 0,
             libretro_supports_persistent_buffer))
+   {
+      cleanup_emulators();
       return false;
-
-   for (i = 0; i < 2; i++)
-      _serialize_size[i] = 0;
+   }
 
    if (gblink_enable)
    {
@@ -306,7 +338,10 @@ bool retro_load_game(const struct retro_game_info *info)
 
       if (!g_gb[1]->load_rom(rom_data, rom_size, NULL, 0,
                libretro_supports_persistent_buffer))
+      {
+         cleanup_emulators();
          return false;
+      }
 
       // for link cables and IR:
       g_gb[0]->set_target(g_gb[1]);
@@ -358,11 +393,8 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
    if (!info)
       return false;
 
-   for (i = 0; i < 2; i++)
-   {
-      g_gb[i]   = NULL;
-      render[i] = NULL;
-   }
+   // Defensive: free any prior load before overwriting pointers.
+   cleanup_emulators();
 
    check_variables();
 
@@ -371,10 +403,10 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
    render[0] = new dmy_renderer(0);
    g_gb[0]   = new gb(render[0], true, true);
    if (!g_gb[0]->load_rom((byte*)info[0].data, info[0].size, NULL, 0, false))
+   {
+      cleanup_emulators();
       return false;
-
-   for (i = 0; i < 2; i++)
-      _serialize_size[i] = 0;
+   }
 
    if (gblink_enable)
    {
@@ -383,31 +415,31 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 
       if (!g_gb[1]->load_rom((byte*)info[1].data, info[1].size, NULL, 0,
                false))
+      {
+         cleanup_emulators();
          return false;
+      }
 
       // for link cables and IR:
       g_gb[0]->set_target(g_gb[1]);
       g_gb[1]->set_target(g_gb[0]);
-   }
 
-   mode = MODE_DUAL_GAME;
+      mode = MODE_DUAL_GAME;
+   }
+   else
+   {
+      // Without link enabled, only g_gb[0] exists. Reflect that in
+      // `mode` so retro_get_memory_data does not try to dereference
+      // g_gb[1] for RETRO_MEMORY_GAMEBOY_2_*.
+      mode = MODE_SINGLE_GAME;
+   }
    return true;
 }
 
 
 void retro_unload_game(void)
 {
-   unsigned i;
-   for(i = 0; i < 2; ++i)
-   {
-      if (g_gb[i])
-      {
-         delete g_gb[i];
-         g_gb[i] = NULL;
-         delete render[i];
-         render[i] = NULL;
-      }
-   }
+   cleanup_emulators();
    libretro_supports_persistent_buffer = false;
 }
 
@@ -447,6 +479,8 @@ void *retro_get_memory_data(unsigned id)
         case MODE_SINGLE_GAME:
         case MODE_SINGLE_GAME_DUAL: /* todo: hook this properly */
         {
+            if (!g_gb[0])
+                return NULL;
             switch(id)
             {
                 case RETRO_MEMORY_SAVE_RAM:
@@ -460,22 +494,25 @@ void *retro_get_memory_data(unsigned id)
                 default:
                     break;
             }
+            break; // (was missing - falling through into MODE_DUAL_GAME
+                   //  could deref a NULL g_gb[1].)
         }
         case MODE_DUAL_GAME:
         {
             switch(id)
             {
                 case RETRO_MEMORY_GAMEBOY_1_SRAM:
-                    return g_gb[0]->get_rom()->get_sram();
+                    return g_gb[0] ? g_gb[0]->get_rom()->get_sram() : NULL;
                 case RETRO_MEMORY_GAMEBOY_1_RTC:
-                    return &(render[0]->fixed_time);
+                    return render[0] ? &(render[0]->fixed_time) : NULL;
                 case RETRO_MEMORY_GAMEBOY_2_SRAM:
-                    return g_gb[1]->get_rom()->get_sram();
+                    return g_gb[1] ? g_gb[1]->get_rom()->get_sram() : NULL;
                 case RETRO_MEMORY_GAMEBOY_2_RTC:
-                    return &(render[1]->fixed_time);
+                    return render[1] ? &(render[1]->fixed_time) : NULL;
                 default:
                     break;
             }
+            break;
         }
     }
    return NULL;
@@ -488,6 +525,8 @@ size_t retro_get_memory_size(unsigned id)
         case MODE_SINGLE_GAME:
         case MODE_SINGLE_GAME_DUAL: /* todo: hook this properly */
         {
+            if (!g_gb[0])
+                return 0;
             switch(id)
             {
                 case RETRO_MEMORY_SAVE_RAM:
@@ -505,22 +544,24 @@ size_t retro_get_memory_size(unsigned id)
                 default:
                     break;
             }
+            break; // see retro_get_memory_data
         }
         case MODE_DUAL_GAME:
         {
             switch(id)
             {
                 case RETRO_MEMORY_GAMEBOY_1_SRAM:
-                    return g_gb[0]->get_rom()->get_sram_size();
+                    return g_gb[0] ? g_gb[0]->get_rom()->get_sram_size() : 0;
                 case RETRO_MEMORY_GAMEBOY_1_RTC:
-                    return sizeof(render[0]->fixed_time);
+                    return render[0] ? sizeof(render[0]->fixed_time) : 0;
                 case RETRO_MEMORY_GAMEBOY_2_SRAM:
-                    return g_gb[1]->get_rom()->get_sram_size();
+                    return g_gb[1] ? g_gb[1]->get_rom()->get_sram_size() : 0;
                 case RETRO_MEMORY_GAMEBOY_2_RTC:
-                    return sizeof(render[1]->fixed_time);
+                    return render[1] ? sizeof(render[1]->fixed_time) : 0;
                 default:
                     break;
             }
+            break;
         }
     }
    return 0;
@@ -599,57 +640,16 @@ void retro_cheat_reset(void)
 
 void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {
-#if 1==0
+   // TGB Dual's cheat plumbing was never finished (only Gameshark
+   // codes are partially understood, and the parser was disabled
+   // behind `#if 1==0`). Log a warning so users aren't confused when
+   // codes from cheat databases do nothing, instead of silently
+   // no-op'ing.
    if (log_cb)
-      log_cb(RETRO_LOG_INFO, "CHEAT:  id=%d, enabled=%d, code='%s'\n", index, enabled, code);
-   // FIXME: work in progress.
-   // As it stands, it seems TGB Dual only has support for Gameshark codes.
-   // Unfortunately, the cheat.xml that ships with bsnes seems to only have
-   // Game Genie codes, which are ROM patches rather than RAM.
-   // http://nocash.emubase.de/pandocs.htm#gamegeniesharkcheats
-   if(false && g_gb[0])
-   {
-      cheat_dat cdat;
-      cheat_dat *tmp=&cdat;
-
-      strncpy(cdat.name, code, sizeof(cdat.name));
-
-      tmp->enable = true;
-      tmp->next = NULL;
-
-      while(false)
-      { // basically, iterate over code.split('+')
-         // TODO: remove all non-alnum chars here
-         if (false)
-         { // if strlen is 9, game genie
-            // game genie format: for "ABCDEFGHI",
-            // AB   = New data
-            // FCDE = Memory address, XORed by 0F000h
-            // GIH  = Check data (can be ignored for our purposes)
-            word scramble;
-            sscanf(code, "%2hhx%4hx", &tmp->dat, &scramble);
-            tmp->code = 1; // TODO: test if this is correct for ROM patching
-            tmp->adr = (((scramble&0xF) << 12) ^ 0xF000) | (scramble >> 4);
-         }
-         else if (false)
-         { // if strlen is 8, gameshark
-            // gameshark format for "ABCDEFGH",
-            // AB    External RAM bank number
-            // CD    New Data
-            // GHEF  Memory Address (internal or external RAM, A000-DFFF)
-            byte adrlo, adrhi;
-            sscanf(code, "%2hhx%2hhx%2hhx%2hhx", &tmp->code, &tmp->dat, &adrlo, &adrhi);
-            tmp->adr = (adrhi<<8) | adrlo;
-         }
-         if(false)
-         { // if there are more cheats left in the string
-            tmp->next = new cheat_dat;
-            tmp = tmp->next;
-         }
-      }
-   }
-   g_gb[0].get_cheat().add_cheat(&cdat);
-#endif
+      log_cb(RETRO_LOG_WARN,
+         "[TGB Dual] retro_cheat_set: cheats are not implemented "
+         "(index=%u enabled=%d code='%s')\n",
+         index, enabled ? 1 : 0, code ? code : "");
 }
 
 

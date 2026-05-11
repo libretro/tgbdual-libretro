@@ -25,6 +25,7 @@
 
 #include "dmy_renderer.h"
 #include "../gb_core/gb.h"
+#include "../gb_core/serializer.h"
 #include "libretro.h"
 
 extern gb *g_gb[2];
@@ -41,7 +42,16 @@ extern bool gblink_enable;
 extern int audio_2p_mode;
 
 #define MSG_FRAMES 60
-#define SAMPLES_PER_FRAME (44100/60)
+// Original code hard-coded SAMPLES_PER_FRAME = 44100/60 = 735.
+// Real GB fps is 4194304/70224 = 59.7275, so 735 samples/frame at
+// the advertised 44100 Hz is a 0.46% slow drift (audio falls behind
+// video). The new logic in refresh() error-diffuses the exact
+// integer count per frame so the long-run rate is exactly 44100 Hz.
+#define AUDIO_SAMPLE_RATE          44100u
+#define GB_CLOCKS_PER_FRAME        70224u
+#define GB_CLOCKS_PER_SECOND       4194304u
+// Worst-case sample count for any single frame at 44100 Hz: 739.
+#define AUDIO_MAX_SAMPLES_PER_FRAME 740
 
 bool _screen_2p_vertical = false;
 bool _screen_switched = false; // set to draw player 2 on the left/top
@@ -51,6 +61,12 @@ int _show_player_screens = 2; // 0 = p1 only, 1 = p2 only, 2 = both players
 dmy_renderer::dmy_renderer(int which)
 {
    which_gb = which;
+   // All previously-uninitialized members are now zeroed so that
+   // MBC3 RTC reads / get_time() calls that happen before the first
+   // refresh() return a deterministic zero instead of heap garbage.
+   fixed_time      = 0;
+   cur_time        = 0;
+   rtc_cycle_accum = 0;
 
    retro_pixel_format pixfmt = RETRO_PIXEL_FORMAT_RGB565;
    rgb565 = environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixfmt);
@@ -105,7 +121,24 @@ word dmy_renderer::unmap_color(word gb_col)
 }
 
 void dmy_renderer::refresh() {
-   static int16_t stream[SAMPLES_PER_FRAME*2];
+   // ----------------------------------------------------------------
+   // Audio sample count for this frame is now error-diffused so the
+   // long-run output rate matches AUDIO_SAMPLE_RATE exactly. The two
+   // GBs in dual-GB mode pick the same count (computed by gb0).
+   // ----------------------------------------------------------------
+   static uint64_t s_audio_accum_cycles = 0;
+   static int      s_samples_this_frame = 0;
+   if (which_gb == 0 || !(g_gb[1] && gblink_enable))
+   {
+      s_audio_accum_cycles += (uint64_t)AUDIO_SAMPLE_RATE * GB_CLOCKS_PER_FRAME;
+      uint64_t n = s_audio_accum_cycles / GB_CLOCKS_PER_SECOND;
+      s_audio_accum_cycles -= n * GB_CLOCKS_PER_SECOND;
+      if (n > AUDIO_MAX_SAMPLES_PER_FRAME) n = AUDIO_MAX_SAMPLES_PER_FRAME;
+      s_samples_this_frame = (int)n;
+   }
+   const int samples = s_samples_this_frame;
+
+   static int16_t stream[AUDIO_MAX_SAMPLES_PER_FRAME * 2];
 
    if (g_gb[1] && gblink_enable)
    {
@@ -113,9 +146,9 @@ void dmy_renderer::refresh() {
       if (audio_2p_mode == 2)
       {
          // mix down to one per channel (dual mono)
-         int16_t tmp_stream[SAMPLES_PER_FRAME*2];
-         this->snd_render->render(tmp_stream, SAMPLES_PER_FRAME);
-         for(int i = 0; i < SAMPLES_PER_FRAME; ++i)
+         int16_t tmp_stream[AUDIO_MAX_SAMPLES_PER_FRAME * 2];
+         this->snd_render->render(tmp_stream, samples);
+         for(int i = 0; i < samples; ++i)
          {
             int l = tmp_stream[(i*2)+0], r = tmp_stream[(i*2)+1];
             stream[(i*2)+which_gb] = int16_t( (l+r) / 2 );
@@ -124,23 +157,42 @@ void dmy_renderer::refresh() {
       else if (audio_2p_mode == which_gb)
       {
          // only play gb 0 or 1
-         this->snd_render->render(stream, SAMPLES_PER_FRAME);
+         this->snd_render->render(stream, samples);
+      }
+      else
+      {
+         // The other GB's APU still has to drain its write queue and
+         // advance its `bef_clock` baseline, otherwise that state goes
+         // stale and corrupts later renders. Render into a scratch
+         // buffer that we throw away.
+         int16_t scratch[AUDIO_MAX_SAMPLES_PER_FRAME * 2];
+         this->snd_render->render(scratch, samples);
       }
       if (which_gb == 1)
       {
          // only do audio callback after both gb's are rendered.
-         audio_batch_cb(stream, SAMPLES_PER_FRAME);
-
-         audio_2p_mode &= 3;
-         memset(stream, 0, sizeof(stream));
+         audio_batch_cb(stream, samples);
+         memset(stream, 0, samples * 2 * sizeof(int16_t));
       }
    }
    else
    {
-      this->snd_render->render(stream, SAMPLES_PER_FRAME);
-      audio_batch_cb(stream, SAMPLES_PER_FRAME);
+      this->snd_render->render(stream, samples);
+      audio_batch_cb(stream, samples);
    }
-   fixed_time = time(NULL);
+
+   // ----------------------------------------------------------------
+   // Cycle-driven RTC. Replaces the original `time(NULL)` call so
+   // GBC RTC reads are deterministic across save states / netplay /
+   // rewind / run-ahead. Ticks fixed_time by +1 every 4194304
+   // emulated cycles (= 1 GB second).
+   // ----------------------------------------------------------------
+   rtc_cycle_accum += GB_CLOCKS_PER_FRAME;
+   while (rtc_cycle_accum >= GB_CLOCKS_PER_SECOND)
+   {
+      rtc_cycle_accum -= GB_CLOCKS_PER_SECOND;
+      fixed_time++;
+   }
 }
 
 int dmy_renderer::check_pad()
@@ -255,5 +307,15 @@ void dmy_renderer::set_time(int type,byte dat)
          break;
    }
    cur_time = now - adj;
+}
+
+void dmy_renderer::serialize(serializer &s)
+{
+   // Captures the in-session RTC state so save states are
+   // deterministic. (`fixed_time` is *also* exposed separately via
+   // RETRO_MEMORY_RTC for cross-session persistence by the frontend.)
+   s_VAR(fixed_time);
+   s_VAR(cur_time);
+   s_VAR(rtc_cycle_accum);
 }
 

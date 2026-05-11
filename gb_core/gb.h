@@ -353,6 +353,7 @@ private:
 	short sq2_produce(int freq);
 	short wav_produce(int freq,bool interpolation);
 	short noi_produce(int freq);
+	unsigned int mrand(dword degree);
 
 	apu_stat stat;
 	apu_stat stat_cpy,stat_tmp;
@@ -366,6 +367,45 @@ private:
 
 	byte mem[0x100];
 	bool b_enable[4];
+
+	// --- formerly file-scope / function-local statics in apu.cpp ---
+	// Per-instance so the two GBs in dual-GB mode don't share APU
+	// state; serialized so save states are bit-deterministic.
+
+	// channel phase accumulators
+	dword sq1_cur_pos;
+	dword sq2_cur_pos;
+	dword wav_cur_pos;
+	dword noi_cur_pos;
+
+	// last-sample / sub-position state from {sq1,sq2,wav,noi}_produce
+	dword sq1_cur_sample;
+	dword sq2_cur_sample;
+	dword wav_cur_pos2;
+	byte  wav_bef_sample;
+	byte  wav_cur_sample;
+	int   noi_cur_sample;
+
+	// noise LFSR
+	int mrand_shift_reg;
+	int mrand_bef_degree;
+
+	// update() envelope/sweep frame counter
+	int update_counter;
+
+	// render() integration / filter state (filter[] is the echo
+	// delay line - not serialized, only matters with echo on)
+	short filter[8820*2];
+	int   render_counter;
+	int   render_tmp_sample;
+	int   render_now_time;
+	int   render_bef_sample_l[5];
+	int   render_bef_sample_r[5];
+
+	// apu::write() clock-delta tracking
+	int  write_bef_clock;
+	int  write_clocks;
+	bool write_bef_clock_init;
 };
 
 class mbc

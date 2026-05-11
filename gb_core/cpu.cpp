@@ -156,7 +156,7 @@ byte cpu::read_direct(word adr)
 		else if (adr<0xFEA0)
 			return oam[adr-0xFE00];//object attribute memory
 		else if (adr<0xFF00)
-			return spare_oam[(((adr-0xFFA0)>>5)<<3)|(adr&7)];
+			return spare_oam[(((adr-0xFEA0)>>5)<<3)|(adr&7)];
 		else if (adr<0xFF80)
 			return io_read(adr);//I/O
 		else if (adr<0xFFFF)
@@ -201,7 +201,7 @@ void cpu::write(word adr,byte dat)
 		else if (adr<0xFEA0)
 			oam[adr-0xFE00]=dat;
 		else if (adr<0xFF00)
-			spare_oam[(((adr-0xFFA0)>>5)<<3)|(adr&7)]=dat;
+			spare_oam[(((adr-0xFEA0)>>5)<<3)|(adr&7)]=dat;
 		else if (adr<0xFF80)
 			io_write(adr,dat);//I/O
 		else if (adr<0xFFFF)

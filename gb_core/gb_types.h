@@ -23,8 +23,14 @@
 #ifndef _GB_TYPES
 #define _GB_TYPES
 
-typedef unsigned char byte;
-typedef unsigned short word;
-typedef unsigned long dword;
+#include <stdint.h>
+
+// Fixed-width so save state layout is identical across platforms.
+// Historically `dword` was `unsigned long`, which is 32-bit on
+// Windows but 64-bit on Linux/macOS - making save states silently
+// incompatible across hosts.
+typedef uint8_t  byte;
+typedef uint16_t word;
+typedef uint32_t dword;
 
 #endif

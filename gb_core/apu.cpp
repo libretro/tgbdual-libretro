@@ -27,10 +27,10 @@
 #include "gb.h"
 #include <stdlib.h>
 
-static dword sq1_cur_pos=0;
-static dword sq2_cur_pos=0;
-static dword wav_cur_pos=0;
-static dword noi_cur_pos=0;
+// Phase accumulators (sq1/sq2/wav/noi_cur_pos) used to live here as
+// file-scope statics, which meant both GB instances in dual-GB mode
+// shared the same audio state. They are now per-instance members of
+// apu_snd.
 
 apu::apu(gb *ref)
 {
@@ -41,6 +41,7 @@ apu::apu(gb *ref)
 
 apu::~apu()
 {
+	delete snd;
 }
 
 void apu::reset()
@@ -63,8 +64,15 @@ byte apu::read(word adr)
 
 void apu::write(word adr,byte dat,int clock)
 {
-	static int bef_clock=clock;
-	static int clocks=0;
+	// `bef_clock` / `clocks` used to be function-local statics in this
+	// method. With static-local-with-runtime-init semantics, the very
+	// first call to apu::write *ever* fixed `bef_clock` to that call's
+	// clock value forever; in dual-GB mode the second instance never
+	// got its own baseline. Both fields are now per-instance.
+	if (!snd->write_bef_clock_init) {
+		snd->write_bef_clock      = clock;
+		snd->write_bef_clock_init = true;
+	}
 
 	snd->mem[adr-0xFF10]=dat;
 
@@ -77,17 +85,17 @@ void apu::write(word adr,byte dat,int clock)
 
 	snd->process(adr,dat);
 
-	if (bef_clock>clock)
-		bef_clock=clock;
+	if (snd->write_bef_clock>clock)
+		snd->write_bef_clock=clock;
 
-	clocks+=clock-bef_clock;
+	snd->write_clocks += clock - snd->write_bef_clock;
 
-	while (clocks>CLOKS_PER_INTERVAL*(ref_gb->get_cpu()->get_speed()?2:1)){
+	while (snd->write_clocks > CLOKS_PER_INTERVAL*(ref_gb->get_cpu()->get_speed()?2:1)){
 		snd->update();
-		clocks-=CLOKS_PER_INTERVAL*(ref_gb->get_cpu()->get_speed()?2:1);
+		snd->write_clocks -= CLOKS_PER_INTERVAL*(ref_gb->get_cpu()->get_speed()?2:1);
 	}
 
-	bef_clock=clock;
+	snd->write_bef_clock=clock;
 }
 
 void apu::update()
@@ -117,6 +125,28 @@ apu_snd::apu_snd(apu *papu)
 	b_enable[0]=b_enable[1]=b_enable[2]=b_enable[3]=true;
 	b_echo=false;
 	b_lowpass=false;
+
+	// All of these used to be `static` (file-scope or function-local).
+	// Initialize them here so even before reset() they have a known
+	// value, and so the two GBs don't share state via translation-unit
+	// statics.
+	sq1_cur_pos = sq2_cur_pos = wav_cur_pos = noi_cur_pos = 0;
+	sq1_cur_sample = sq2_cur_sample = 0;
+	wav_cur_pos2 = 0;
+	wav_bef_sample = wav_cur_sample = 0;
+	noi_cur_sample = 10000;
+	mrand_shift_reg  = 0x7f;
+	mrand_bef_degree = 0;
+	update_counter = 0;
+	render_counter = 0;
+	render_tmp_sample = 0;
+	render_now_time = 0;
+	for (int i = 0; i < 5; ++i)
+		render_bef_sample_l[i] = render_bef_sample_r[i] = 0;
+	memset(filter, 0, sizeof(filter));
+	write_bef_clock      = 0;
+	write_clocks         = 0;
+	write_bef_clock_init = false;
 }
 
 apu_snd::~apu_snd()
@@ -139,6 +169,27 @@ void apu_snd::reset()
 	stat.master_vol[0]=stat.master_vol[1]=7;
 
 	memcpy(&stat_cpy,&stat,sizeof(stat));
+
+	// Re-zero the per-instance state that used to be file/function
+	// scope statics. Skipping this would leak audio state across
+	// soft-resets within a single session.
+	sq1_cur_pos = sq2_cur_pos = wav_cur_pos = noi_cur_pos = 0;
+	sq1_cur_sample = sq2_cur_sample = 0;
+	wav_cur_pos2 = 0;
+	wav_bef_sample = wav_cur_sample = 0;
+	noi_cur_sample = 10000;
+	mrand_shift_reg  = 0x7f;
+	mrand_bef_degree = 0;
+	update_counter = 0;
+	render_counter = 0;
+	render_tmp_sample = 0;
+	render_now_time = 0;
+	for (int i = 0; i < 5; ++i)
+		render_bef_sample_l[i] = render_bef_sample_r[i] = 0;
+	memset(filter, 0, sizeof(filter));
+	write_bef_clock      = 0;
+	write_clocks         = 0;
+	write_bef_clock_init = false;
 
 	byte gb_init_wav[]={0x06,0xFE,0x0E,0x7F,0x00,0xFF,0x58,0xDF,0x00,0xEC,0x00,0xBF,0x0C,0xED,0x03,0xF7};
 	byte gbc_init_wav[]={0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF};
@@ -330,7 +381,7 @@ static int sq_wav_dat[4][8]={
 
 inline short apu_snd::sq1_produce(int freq)
 {
-	static dword cur_sample=0;
+	// `cur_sample` is now apu_snd::sq1_cur_sample (per-instance + serialized)
 	dword cur_freq;
 	short ret;
 
@@ -338,11 +389,11 @@ inline short apu_snd::sq1_produce(int freq)
 		return 15000;
 
 	if (freq){
-		ret=sq_wav_dat[stat.sq1_type&3][cur_sample]*20000-10000;
+		ret=sq_wav_dat[stat.sq1_type&3][sq1_cur_sample]*20000-10000;
 		cur_freq=((freq*8)>0x10000)?0xffff:freq*8;
 		sq1_cur_pos+=(cur_freq<<16)/44100;
 		if (sq1_cur_pos&0xffff0000){
-			cur_sample=(cur_sample+(sq1_cur_pos>>16))&7;
+			sq1_cur_sample=(sq1_cur_sample+(sq1_cur_pos>>16))&7;
 			sq1_cur_pos&=0xffff;
 		}
 	}
@@ -354,7 +405,7 @@ inline short apu_snd::sq1_produce(int freq)
 
 inline short apu_snd::sq2_produce(int freq)
 {
-	static dword cur_sample=0;
+	// `cur_sample` is now apu_snd::sq2_cur_sample (per-instance + serialized)
 	dword cur_freq;
 	short ret;
 
@@ -362,11 +413,11 @@ inline short apu_snd::sq2_produce(int freq)
 		return 15000;
 
 	if (freq){
-		ret=sq_wav_dat[stat.sq2_type&3][cur_sample]*20000-10000;
+		ret=sq_wav_dat[stat.sq2_type&3][sq2_cur_sample]*20000-10000;
 		cur_freq=((freq*8)>0x10000)?0xffff:freq*8;
 		sq2_cur_pos+=(cur_freq<<16)/44100;
 		if (sq2_cur_pos&0xffff0000){
-			cur_sample=(cur_sample+(sq2_cur_pos>>16))&7;
+			sq2_cur_sample=(sq2_cur_sample+(sq2_cur_pos>>16))&7;
 			sq2_cur_pos&=0xffff;
 		}
 	}
@@ -378,8 +429,8 @@ inline short apu_snd::sq2_produce(int freq)
 
 inline short apu_snd::wav_produce(int freq,bool interpolation)
 {
-	static dword cur_pos2=0;
-	static byte bef_sample=0,cur_sample=0;
+	// `cur_pos2`, `bef_sample`, `cur_sample` are now apu_snd members
+	// (wav_cur_pos2 / wav_bef_sample / wav_cur_sample).
 	dword cur_freq;
 	short ret;
 
@@ -388,20 +439,20 @@ inline short apu_snd::wav_produce(int freq,bool interpolation)
 
 	if (freq){
 		if (interpolation){
-			ret=((cur_sample*2500-15000)*wav_cur_pos+(bef_sample*2500-15000)*(0x10000-wav_cur_pos))/0x10000;
+			ret=((wav_cur_sample*2500-15000)*wav_cur_pos+(wav_bef_sample*2500-15000)*(0x10000-wav_cur_pos))/0x10000;
 		}
 		else{
-			ret=cur_sample*2500-15000;
+			ret=wav_cur_sample*2500-15000;
 		}
 		cur_freq=(freq>0x10000)?0xffff:freq;
 		wav_cur_pos+=(cur_freq<<16)/44100;
 		if (wav_cur_pos&0xffff0000){
-			bef_sample=cur_sample;
-			cur_pos2=(cur_pos2+(wav_cur_pos>>16))&31;
-			if (cur_pos2&1)
-				cur_sample=mem[0x20+cur_pos2/2]&0xf;
+			wav_bef_sample=wav_cur_sample;
+			wav_cur_pos2=(wav_cur_pos2+(wav_cur_pos>>16))&31;
+			if (wav_cur_pos2&1)
+				wav_cur_sample=mem[0x20+wav_cur_pos2/2]&0xf;
 			else
-				cur_sample=mem[0x20+cur_pos2/2]>>4;
+				wav_cur_sample=mem[0x20+wav_cur_pos2/2]>>4;
 			wav_cur_pos&=0xffff;
 		}
 	}
@@ -411,22 +462,23 @@ inline short apu_snd::wav_produce(int freq,bool interpolation)
 	return ret;
 }
 
-static inline unsigned int _mrand(dword degree)
+// Was a file-scope static function `_mrand` with two function-local
+// statics (`shift_reg`, `bef_degree`). Both are now per-instance
+// members so the noise LFSR no longer leaks between the two GBs.
+unsigned int apu_snd::mrand(dword degree)
 {
-	static int shift_reg=0x7f;
-	static int bef_degree=0;
 	int xor_reg=0;
 	int masked;
-	
+
 	degree=(degree==7)?0:1;
 
-	if (bef_degree!=degree){
-		shift_reg&=(degree?0x7fff:0x7f);
-		if (!shift_reg) shift_reg=degree?0x7fff:0x7f;
+	if (mrand_bef_degree!=(int)degree){
+		mrand_shift_reg&=(degree?0x7fff:0x7f);
+		if (!mrand_shift_reg) mrand_shift_reg=degree?0x7fff:0x7f;
 	}
-	bef_degree=degree;
+	mrand_bef_degree=(int)degree;
 
-	masked=shift_reg&3;
+	masked=mrand_shift_reg&3;
 	while(masked)
 	{
 		xor_reg^=masked&0x01;
@@ -434,12 +486,12 @@ static inline unsigned int _mrand(dword degree)
 	}
 
 	if(xor_reg)
-		shift_reg|=(degree?0x8000:0x80);
+		mrand_shift_reg|=(degree?0x8000:0x80);
 	else
-		shift_reg&=~(degree?0x8000:0x80);
-	shift_reg>>=1;
+		mrand_shift_reg&=~(degree?0x8000:0x80);
+	mrand_shift_reg>>=1;
 
-	return shift_reg;
+	return mrand_shift_reg;
 }
 /*
 inline short apu_snd::noi_produce(int freq)
@@ -453,8 +505,8 @@ inline short apu_snd::noi_produce(int freq)
 		cur_freq=((freq)>44100)?44100:freq;
 		noi_cur_pos+=(cur_freq<<16)/44100;
 		if (noi_cur_pos&0xffff0000){
-			cur_sample=(_mrand(stat.noi_step)&1)?12000:-10000;
-//			cur_sample=(_mrand(stat.noi_step)&0x1f)*1000;
+			cur_sample=(mrand(stat.noi_step)&1)?12000:-10000;
+//			cur_sample=(mrand(stat.noi_step)&0x1f)*1000;
 			noi_cur_pos&=0xffff;
 		}
 	}
@@ -465,27 +517,27 @@ inline short apu_snd::noi_produce(int freq)
 }*/
 inline short apu_snd::noi_produce(int freq)
 {
- 	static int cur_sample=10000;
+	// `cur_sample` is now apu_snd::noi_cur_sample.
  	dword cur_freq;
  	short ret;
  	int sc;
  	if (freq){
- 		ret=cur_sample;
+ 		ret=noi_cur_sample;
  		cur_freq=freq;
  		noi_cur_pos+=cur_freq;
  		sc=0;
  		while(noi_cur_pos>44100){
  			if(sc==0)
- 				cur_sample=(_mrand(stat.noi_step)&1)?12000:-10000;
+ 				noi_cur_sample=(mrand(stat.noi_step)&1)?12000:-10000;
 			else
- 				cur_sample+=(_mrand(stat.noi_step)&1)?12000:-10000;
-//			cur_sample=(_mrand(stat.noi_step)&0x1f)*1000;
+ 				noi_cur_sample+=(mrand(stat.noi_step)&1)?12000:-10000;
+//			noi_cur_sample=(mrand(stat.noi_step)&0x1f)*1000;
 			noi_cur_pos-=44100;
  			sc++;
  		}
  		
 		if(sc > 0)
- 			cur_sample /= sc;
+ 			noi_cur_sample /= sc;
  		
 		
 	}
@@ -496,15 +548,15 @@ inline short apu_snd::noi_produce(int freq)
 
 void apu_snd::update()
 {
-	static int counter=0;
+	// `counter` is now apu_snd::update_counter (per-instance + serialized).
 
 	if (stat.sq1_playing&&stat.master_enable){
-		if (stat.sq1_env_speed&&(counter%(4*stat.sq1_env_speed)==0)){
+		if (stat.sq1_env_speed&&(update_counter%(4*stat.sq1_env_speed)==0)){
 			stat.sq1_vol+=(stat.sq1_env_dir?1:-1);
 			if (stat.sq1_vol<0) stat.sq1_vol=0;
 			if (stat.sq1_vol>15) stat.sq1_vol=15;
 		}
-		if (stat.sq1_sw_time&&stat.sq1_sw_shift&&(counter%(2*stat.sq1_sw_time)==0)){
+		if (stat.sq1_sw_time&&stat.sq1_sw_shift&&(update_counter%(2*stat.sq1_sw_time)==0)){
 			if (stat.sq1_sw_dir)
 				stat.sq1_freq=stat.sq1_freq-(stat.sq1_freq>>stat.sq1_sw_shift);
 			else
@@ -519,7 +571,7 @@ void apu_snd::update()
 	}
 
 	if (stat.sq2_playing&&stat.master_enable){
-		if (stat.sq2_env_speed&&(counter%(4*stat.sq2_env_speed)==0)){
+		if (stat.sq2_env_speed&&(update_counter%(4*stat.sq2_env_speed)==0)){
 			stat.sq2_vol+=(stat.sq2_env_dir?1:-1);
 			if (stat.sq2_vol<0) stat.sq2_vol=0;
 			if (stat.sq2_vol>15) stat.sq2_vol=15;
@@ -542,7 +594,7 @@ void apu_snd::update()
 	}
 
 	if (stat.noi_playing&&stat.master_enable){
-		if (stat.noi_env_speed&&(counter%(4*stat.noi_env_speed)==0)){
+		if (stat.noi_env_speed&&(update_counter%(4*stat.noi_env_speed)==0)){
 			stat.noi_vol+=(stat.noi_env_dir?1:-1);
 			if (stat.noi_vol<0) stat.noi_vol=0;
 			if (stat.noi_vol>15) stat.noi_vol=15;
@@ -554,29 +606,29 @@ void apu_snd::update()
 		}
 	}
 
-	counter++;
+	update_counter++;
 }
 
 void apu_snd::render(short *buf,int sample)
 {
-	static short filter[8820*2];
-	static int counter=0;
-
+	// `filter`, `counter`, `tmp_sample`, `now_time`, `bef_sample_l/r`
+	// are now apu_snd members (filter / render_counter /
+	// render_tmp_sample / render_now_time / render_bef_sample_l/r) so
+	// the two GBs in dual-GB mode have independent integration state.
 	memcpy(&stat_tmp,&stat,sizeof(stat));
 	memcpy(&stat,&stat_cpy,sizeof(stat_cpy));
 
 	int tmp_l,tmp_r,tmp;
 	int now_clock=ref_apu->ref_gb->get_cpu()->get_clock();
 	int cur=0;
-	static int tmp_sample=0,now_time,bef_sample_l[5]={0,0,0,0,0},bef_sample_r[5]={0,0,0,0,0};
 	int update_count=0;
 
 	memset(buf,0,sample*4);
 
 	for (int i=0;i<sample;i++){
-		now_time=bef_clock+(now_clock-bef_clock)*i/sample;
+		render_now_time=bef_clock+(now_clock-bef_clock)*i/sample;
 
-		if ((cur!=0x10000)&&(now_time>write_que[cur].clock)&&(que_count)){
+		if ((cur!=0x10000)&&(render_now_time>write_que[cur].clock)&&(que_count)){
 			process(write_que[cur].adr,write_que[cur].dat);
 			cur++;
 			if (cur>=que_count)
@@ -620,35 +672,35 @@ void apu_snd::render(short *buf,int sample)
 //			tmp_r/=2;
 			int ttmp_l=tmp_l,ttmp_r=tmp_r;
 			ttmp_l*=5;ttmp_r*=5;
-			ttmp_l+=filter[counter*2]*2;
-			ttmp_r+=filter[counter*2+1]*2;
+			ttmp_l+=filter[render_counter*2]*2;
+			ttmp_r+=filter[render_counter*2+1]*2;
 			ttmp_l/=5;
 			ttmp_r/=5;
 			tmp_l=ttmp_l;
 			tmp_r=ttmp_r;
-			filter[counter*2]=tmp_l;
-			filter[counter*2+1]=tmp_r;
-			counter++;
-			if (counter>=2000)
-				counter=0;
+			filter[render_counter*2]=tmp_l;
+			filter[render_counter*2+1]=tmp_r;
+			render_counter++;
+			if (render_counter>=2000)
+				render_counter=0;
 //			tmp_l/=2;
 //			tmp_r/=2;
 		}
 		if (b_lowpass){
 			// 出力をフィルタリング
 			// Filtering the output
-			bef_sample_l[4]=bef_sample_l[3];
-			bef_sample_l[3]=bef_sample_l[2];
-			bef_sample_l[2]=bef_sample_l[1];
-			bef_sample_l[1]=bef_sample_l[0];
-			bef_sample_l[0]=tmp_l;
-			bef_sample_r[4]=bef_sample_r[3];
-			bef_sample_r[3]=bef_sample_r[2];
-			bef_sample_r[2]=bef_sample_r[1];
-			bef_sample_r[1]=bef_sample_r[0];
-			bef_sample_r[0]=tmp_r;
-			tmp_l=(bef_sample_l[4]+bef_sample_l[3]*2+bef_sample_l[2]*8+bef_sample_l[1]*2+bef_sample_l[0])/14;
-			tmp_r=(bef_sample_r[4]+bef_sample_r[3]*2+bef_sample_r[2]*8+bef_sample_r[1]*2+bef_sample_r[0])/14;
+			render_bef_sample_l[4]=render_bef_sample_l[3];
+			render_bef_sample_l[3]=render_bef_sample_l[2];
+			render_bef_sample_l[2]=render_bef_sample_l[1];
+			render_bef_sample_l[1]=render_bef_sample_l[0];
+			render_bef_sample_l[0]=tmp_l;
+			render_bef_sample_r[4]=render_bef_sample_r[3];
+			render_bef_sample_r[3]=render_bef_sample_r[2];
+			render_bef_sample_r[2]=render_bef_sample_r[1];
+			render_bef_sample_r[1]=render_bef_sample_r[0];
+			render_bef_sample_r[0]=tmp_r;
+			tmp_l=(render_bef_sample_l[4]+render_bef_sample_l[3]*2+render_bef_sample_l[2]*8+render_bef_sample_l[1]*2+render_bef_sample_l[0])/14;
+			tmp_r=(render_bef_sample_r[4]+render_bef_sample_r[3]*2+render_bef_sample_r[2]*8+render_bef_sample_r[1]*2+render_bef_sample_r[0])/14;
 		}
 		tmp_l=(tmp_l>32767)?32767:tmp_l;
 		tmp_l=(tmp_l<-32767)?-32767:tmp_l;
@@ -662,9 +714,9 @@ void apu_snd::render(short *buf,int sample)
 		buf[i*2]=tmp_r;
 		buf[i*2+1]=tmp_l;
 
-		tmp_sample++;
+		render_tmp_sample++;
 
-		while(update_count*CLOKS_PER_INTERVAL*(ref_apu->ref_gb->get_cpu()->get_speed()?2:1)<now_time-bef_clock){
+		while(update_count*CLOKS_PER_INTERVAL*(ref_apu->ref_gb->get_cpu()->get_speed()?2:1)<render_now_time-bef_clock){
 			update();
 			update_count++;
 		}
@@ -697,5 +749,35 @@ void apu_snd::serialize(serializer &s)
 	s_VAR(bef_clock);
 	s_VAR(b_echo);
 	s_VAR(b_lowpass);
+
+	// Phase / sample / counter state that used to be `static`.
+	// Without this, save states couldn't reproduce the bit-exact
+	// audio sequence after restore.
+	s_VAR(sq1_cur_pos);
+	s_VAR(sq2_cur_pos);
+	s_VAR(wav_cur_pos);
+	s_VAR(noi_cur_pos);
+	s_VAR(sq1_cur_sample);
+	s_VAR(sq2_cur_sample);
+	s_VAR(wav_cur_pos2);
+	s_VAR(wav_bef_sample);
+	s_VAR(wav_cur_sample);
+	s_VAR(noi_cur_sample);
+	s_VAR(mrand_shift_reg);
+	s_VAR(mrand_bef_degree);
+	s_VAR(update_counter);
+	s_VAR(render_counter);
+	s_VAR(render_tmp_sample);
+	s_VAR(render_now_time);
+	s_ARRAY(render_bef_sample_l);
+	s_ARRAY(render_bef_sample_r);
+	s_VAR(write_bef_clock);
+	s_VAR(write_clocks);
+	s_VAR(write_bef_clock_init);
+
+	// Note: filter[] (echo delay line, ~35KB) is intentionally NOT
+	// serialized. It only matters when echo is on (off by default),
+	// and a brief glitch on restore is acceptable in that niche case
+	// in exchange for a much smaller save state.
 }
 

@@ -278,6 +278,10 @@ void gb::serialize(serializer &s)
 	m_mbc->serialize(s);
 	m_lcd->serialize(s);
 	m_apu->serialize(s);
+
+	// Renderer carries small but state-bearing fields (e.g. RTC
+	// baseline / cycle accumulator). Default base impl is a no-op.
+	m_renderer->serialize(s);
 }
 
 size_t gb::get_state_size(void)

@@ -37,9 +37,16 @@ public:
 	virtual byte get_time(int type);
 	virtual void set_time(int type,byte dat);
 
+	virtual void serialize(serializer &s);
+
 	dword fixed_time;
 private:
 	int cur_time;
 	int which_gb;
 	bool rgb565;
+
+	// Cycle-driven RTC: `fixed_time` is bumped +1 every 4194304
+	// emulated CPU cycles. This counter holds the residual.
+	// Replaces the original wall-clock time(NULL) read.
+	dword rtc_cycle_accum;
 };

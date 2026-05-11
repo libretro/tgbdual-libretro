@@ -26,9 +26,12 @@
 
 #include "gb_types.h"
 
+class serializer;
+
 class sound_renderer
 {
 public:
+	virtual ~sound_renderer() {}
 	virtual void render(short *buf,int samples)=0;
 };
 
@@ -50,6 +53,10 @@ public:
 	virtual word get_sensor(bool x_y)=0;
 
 	virtual void set_bibrate(bool bibrate)=0;
+
+	// Optional hook so subclasses can persist their own state through
+	// retro_serialize / retro_unserialize. Default no-op.
+	virtual void serialize(serializer & /*s*/) {}
 
 protected:
 	sound_renderer *snd_render;
