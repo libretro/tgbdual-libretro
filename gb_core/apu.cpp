@@ -434,9 +434,8 @@ inline short apu_snd::sq2_produce(apu_stat &s, int freq)
 	return ret;
 }
 
-inline short apu_snd::wav_produce(apu_stat &s, int freq, bool interpolation)
+inline short apu_snd::wav_produce(int freq, bool interpolation)
 {
-	apu_stat &stat = s;
 	// `cur_pos2`, `bef_sample`, `cur_sample` are now apu_snd members
 	// (wav_cur_pos2 / wav_bef_sample / wav_cur_sample).
 	dword cur_freq;
@@ -668,7 +667,7 @@ void apu_snd::render(short *buf,int sample)
 					tmp_r+=tmp*stat.master_vol[1]/8;
 			}
 			if (b_enable[2]&&stat.wav_playing/*&&(stat.wav_freq!=0x7ff)*/){
-				tmp=wav_produce(stat, (65536/(2048-(stat.wav_freq&0x7FF)))*32, false)*stat.wav_vol/10*stat.wav_enable;
+				tmp=wav_produce((65536/(2048-(stat.wav_freq&0x7FF)))*32, false)*stat.wav_vol/10*stat.wav_enable;
 				if (stat.ch_enable[2][0])
 					tmp_l+=tmp*stat.master_vol[0]/8;
 				if (stat.ch_enable[2][1])

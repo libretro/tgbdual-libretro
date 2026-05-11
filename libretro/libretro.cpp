@@ -272,8 +272,6 @@ bool retro_load_game(const struct retro_game_info *info)
    environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void *)vars_single);
    check_variables();
 
-   unsigned i;
-
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "D-Pad Up" },
@@ -362,7 +360,6 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
         return false; /* all other types are unhandled for now */
 
    environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void *)vars_dual);
-   unsigned i;
 
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },

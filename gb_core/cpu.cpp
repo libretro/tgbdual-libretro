@@ -293,9 +293,12 @@ byte cpu::io_read(word adr)
 			if ((ref_gb->get_cregs()->RP&0xC0)==0xC0){
 				dword *que=ref_gb->get_target()->get_cpu()->rp_que;
 				int que_cnt=0;
-				int cur;
-				while((que[que_cnt]&0xffff)>rest_clock)	cur=que[que_cnt++]>>16;
-//				fprintf(file,"read RP %02X\n",(ref_gb->get_cregs()->RP&1)|((cur&1)<<1)|0xC0);
+				int cur=0; // -Wmaybe-uninitialized: loop below may not run
+				// que entries pack {clock, bit}: clock in low 16, bit in
+				// high 16. Cast clock to int so the compare against the
+				// signed rest_clock doesn't flip sign on int promotion.
+				while ((int)(que[que_cnt]&0xffff) > rest_clock)
+					cur = (int)(que[que_cnt++] >> 16);
 				return (ref_gb->get_cregs()->RP&1)|((cur&1)<<1)|0xC0;
 
 //				fprintf(file,"read RP %02X\n",(ref_gb->get_cregs()->RP&1)|((ref_gb->get_target()->get_cregs()->RP&1)<<1)|0xC0);

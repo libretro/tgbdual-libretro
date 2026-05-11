@@ -80,12 +80,15 @@ void cheat::create_unique_name(char *buf)
 {
 	int num;
 	bool end=false;
-	char tmp[16];
+	// "cheat_" (6) + INT_MIN as -2147483648 (11) + NUL (1) = 18 bytes
+	// worst case. Bump to 24 so neither -Wformat-overflow nor
+	// -Wformat-truncation can fire on the format below.
+	char tmp[24];
 	std::list<cheat_dat>::iterator ite;
 
 	for (num=0;!end;num++){
 		end=true;
-		sprintf(tmp,"cheat_%03d",num);
+		snprintf(tmp,sizeof(tmp),"cheat_%03d",num);
 		for (ite=cheat_list.begin();ite!=cheat_list.end();ite++)
 			if (strcmp(ite->name,tmp)==0)
 				end=false;

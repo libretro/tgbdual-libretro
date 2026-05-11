@@ -371,7 +371,9 @@ private:
 	void update(apu_stat &s);
 	short sq1_produce(apu_stat &s, int freq);
 	short sq2_produce(apu_stat &s, int freq);
-	short wav_produce(apu_stat &s, int freq, bool interpolation);
+	// wav_produce reads only mem[] and wav_* members (no stat fields),
+	// so it does not take the snapshot reference like its siblings.
+	short wav_produce(int freq, bool interpolation);
 	short noi_produce(apu_stat &s, int freq);
 	unsigned int mrand(dword degree);
 
