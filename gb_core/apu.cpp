@@ -83,7 +83,7 @@ void apu::write(word adr,byte dat,int clock)
 	if (snd->que_count>=0x10000)
 		snd->que_count=0xffff;
 
-	snd->process(adr,dat);
+	snd->process(snd->stat, adr, dat);
 
 	if (snd->write_bef_clock>clock)
 		snd->write_bef_clock=clock;
@@ -91,7 +91,7 @@ void apu::write(word adr,byte dat,int clock)
 	snd->write_clocks += clock - snd->write_bef_clock;
 
 	while (snd->write_clocks > CLOKS_PER_INTERVAL*(ref_gb->get_cpu()->get_speed()?2:1)){
-		snd->update();
+		snd->update(snd->stat);
 		snd->write_clocks -= CLOKS_PER_INTERVAL*(ref_gb->get_cpu()->get_speed()?2:1);
 	}
 
@@ -210,8 +210,13 @@ bool apu_snd::get_enable(int ch)
 	return b_enable[ch];
 }
 
-void apu_snd::process(word adr,byte dat)
+void apu_snd::process(apu_stat &s, word adr, byte dat)
 {
+	// Body unchanged - parameter routes to a local alias named `stat`
+	// so the existing register-decode code below doesn't need any
+	// rewrites. The caller picks which apu_stat to mutate.
+	apu_stat &stat = s;
+
 	int tb[]={0,4,2,1};
 	int mul_t[]={2,1,1,1,1,1,1,1};
 	int div_t[]={1,1,2,3,4,5,6,7};
@@ -379,8 +384,9 @@ static int sq_wav_dat[4][8]={
 	{0,0,1,1,1,1,1,1}
 };
 
-inline short apu_snd::sq1_produce(int freq)
+inline short apu_snd::sq1_produce(apu_stat &s, int freq)
 {
+	apu_stat &stat = s;
 	// `cur_sample` is now apu_snd::sq1_cur_sample (per-instance + serialized)
 	dword cur_freq;
 	short ret;
@@ -403,8 +409,9 @@ inline short apu_snd::sq1_produce(int freq)
 	return ret;
 }
 
-inline short apu_snd::sq2_produce(int freq)
+inline short apu_snd::sq2_produce(apu_stat &s, int freq)
 {
+	apu_stat &stat = s;
 	// `cur_sample` is now apu_snd::sq2_cur_sample (per-instance + serialized)
 	dword cur_freq;
 	short ret;
@@ -427,8 +434,9 @@ inline short apu_snd::sq2_produce(int freq)
 	return ret;
 }
 
-inline short apu_snd::wav_produce(int freq,bool interpolation)
+inline short apu_snd::wav_produce(apu_stat &s, int freq, bool interpolation)
 {
+	apu_stat &stat = s;
 	// `cur_pos2`, `bef_sample`, `cur_sample` are now apu_snd members
 	// (wav_cur_pos2 / wav_bef_sample / wav_cur_sample).
 	dword cur_freq;
@@ -515,8 +523,9 @@ inline short apu_snd::noi_produce(int freq)
 
 	return ret;
 }*/
-inline short apu_snd::noi_produce(int freq)
+inline short apu_snd::noi_produce(apu_stat &s, int freq)
 {
+	apu_stat &stat = s;
 	// `cur_sample` is now apu_snd::noi_cur_sample.
  	dword cur_freq;
  	short ret;
@@ -546,8 +555,9 @@ inline short apu_snd::noi_produce(int freq)
  	return ret;
 }
 
-void apu_snd::update()
+void apu_snd::update(apu_stat &s)
 {
+	apu_stat &stat = s;
 	// `counter` is now apu_snd::update_counter (per-instance + serialized).
 
 	if (stat.sq1_playing&&stat.master_enable){
@@ -615,8 +625,14 @@ void apu_snd::render(short *buf,int sample)
 	// are now apu_snd members (filter / render_counter /
 	// render_tmp_sample / render_now_time / render_bef_sample_l/r) so
 	// the two GBs in dual-GB mode have independent integration state.
-	memcpy(&stat_tmp,&stat,sizeof(stat));
-	memcpy(&stat,&stat_cpy,sizeof(stat_cpy));
+
+	// The original code clobbered `this->stat` with stat_cpy, ran the
+	// loop, then restored. Four sizeof(apu_stat) memcpys per render.
+	// Now that process()/update()/*_produce() take the target stat by
+	// reference, render works directly on stat_cpy via a local alias
+	// and `this->stat` (the live state mutated by apu::write) stays
+	// untouched. Zero memcpys.
+	apu_stat &stat = stat_cpy;
 
 	int tmp_l,tmp_r,tmp;
 	int now_clock=ref_apu->ref_gb->get_cpu()->get_clock();
@@ -629,7 +645,7 @@ void apu_snd::render(short *buf,int sample)
 		render_now_time=bef_clock+(now_clock-bef_clock)*i/sample;
 
 		if ((cur!=0x10000)&&(render_now_time>write_que[cur].clock)&&(que_count)){
-			process(write_que[cur].adr,write_que[cur].dat);
+			process(stat, write_que[cur].adr, write_que[cur].dat);
 			cur++;
 			if (cur>=que_count)
 				cur=0x10000;
@@ -638,28 +654,28 @@ void apu_snd::render(short *buf,int sample)
 		tmp_l=tmp_r=0;
 		if (stat.master_enable){
 			if (b_enable[0]&&stat.sq1_playing/*&&(stat.sq1_freq!=0x7ff)*/){
-				tmp=sq1_produce((131072/(2048-(stat.sq1_freq&0x7FF))))*stat.sq1_vol/20;
+				tmp=sq1_produce(stat, (131072/(2048-(stat.sq1_freq&0x7FF))))*stat.sq1_vol/20;
 				if (stat.ch_enable[0][0])
 					tmp_l+=tmp*stat.master_vol[0]/8;
 				if (stat.ch_enable[0][1])
 					tmp_r+=tmp*stat.master_vol[1]/8;
 			}
 			if (b_enable[1]&&stat.sq2_playing/*&&(stat.sq2_freq!=0x7ff)*/){
-				tmp=sq2_produce((131072/(2048-(stat.sq2_freq&0x7FF))))*stat.sq2_vol/20;
+				tmp=sq2_produce(stat, (131072/(2048-(stat.sq2_freq&0x7FF))))*stat.sq2_vol/20;
 				if (stat.ch_enable[1][0])
 					tmp_l+=tmp*stat.master_vol[0]/8;
 				if (stat.ch_enable[1][1])
 					tmp_r+=tmp*stat.master_vol[1]/8;
 			}
 			if (b_enable[2]&&stat.wav_playing/*&&(stat.wav_freq!=0x7ff)*/){
-				tmp=wav_produce((65536/(2048-(stat.wav_freq&0x7FF)))*32,false)*stat.wav_vol/10*stat.wav_enable;
+				tmp=wav_produce(stat, (65536/(2048-(stat.wav_freq&0x7FF)))*32, false)*stat.wav_vol/10*stat.wav_enable;
 				if (stat.ch_enable[2][0])
 					tmp_l+=tmp*stat.master_vol[0]/8;
 				if (stat.ch_enable[2][1])
 					tmp_r+=tmp*stat.master_vol[1]/8;
 			}
 			if (b_enable[3]&&stat.noi_playing){
-				tmp=noi_produce(stat.noi_freq)*stat.noi_vol/20;
+				tmp=noi_produce(stat, stat.noi_freq)*stat.noi_vol/20;
 				if (stat.ch_enable[3][0])
 					tmp_l+=tmp*stat.master_vol[0]/8;
 				if (stat.ch_enable[3][1])
@@ -717,7 +733,7 @@ void apu_snd::render(short *buf,int sample)
 		render_tmp_sample++;
 
 		while(update_count*CLOKS_PER_INTERVAL*(ref_apu->ref_gb->get_cpu()->get_speed()?2:1)<render_now_time-bef_clock){
-			update();
+			update(stat);
 			update_count++;
 		}
 //		if (tmp_sample>UPDATE_INTERVAL){
@@ -726,15 +742,15 @@ void apu_snd::render(short *buf,int sample)
 //		}
 	}
 	while (cur<que_count){ // 取りこぼし // Lose information
-		process(write_que[cur].adr,write_que[cur].dat);
+		process(stat, write_que[cur].adr, write_que[cur].dat);
 		cur++;
 	}
 
 	que_count=0;
 	bef_clock=now_clock;
 
-	memcpy(&stat_cpy,&stat,sizeof(stat));
-	memcpy(&stat,&stat_tmp,sizeof(stat));
+	// (No memcpys needed: `stat` in this function is an alias for
+	// stat_cpy, so the new "post-render" state is already in place.)
 }
 
 void apu::serialize(serializer &s) { snd->serialize(s); }

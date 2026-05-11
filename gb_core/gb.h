@@ -216,8 +216,11 @@ private:
 	gb_regs regs;
 	gbc_regs c_regs;
 
-	word dmy[160*5]; // vframe はみ出した時用
-	word vframe[160*(144+100)];
+	word dmy[160*5]; // vframe はみ出した時用 (spill guard for one-past-end writes)
+	// PPU writes lines 0..143 only; lcd-off path memsets 160*144*2 bytes.
+	// Original used [160*(144+100)] = 78 KB; the +100 lines are dead
+	// capacity. Shrink to exactly 144 lines.
+	word vframe[160*144];
 
 	ext_hook hook_proc;
 
@@ -251,11 +254,14 @@ public:
 	std::list<cheat_dat>::iterator get_first() { return cheat_list.begin(); }
 	std::list<cheat_dat>::iterator get_end() { return cheat_list.end(); }
 
-	int *get_cheat_map() { return cheat_map; }
+	// cheat_map[adr] is a presence bitmap (0 or 1) - the original
+	// `int` (4 bytes each) wasted 192 KB per GB. uint8_t holds the
+	// full range used by create_cheat_map().
+	uint8_t *get_cheat_map() { return cheat_map; }
 
 private:
 	std::list<cheat_dat> cheat_list;
-	int cheat_map[0x10000];
+	uint8_t cheat_map[0x10000];
 
 	gb *ref_gb;
 };
@@ -347,16 +353,21 @@ public:
 
 	void serialize(serializer &s);
 private:
-	void process(word adr,byte dat);
-	void update();
-	short sq1_produce(int freq);
-	short sq2_produce(int freq);
-	short wav_produce(int freq,bool interpolation);
-	short noi_produce(int freq);
+	// Both helpers used to implicitly act on `stat`, which forced
+	// render() to clobber `stat` with stat_cpy and restore it via
+	// stat_tmp - four sizeof(apu_stat) memcpys per audio render.
+	// Taking the target state as a parameter lets render() work on
+	// a local variable and removes the dance.
+	void process(apu_stat &s, word adr, byte dat);
+	void update(apu_stat &s);
+	short sq1_produce(apu_stat &s, int freq);
+	short sq2_produce(apu_stat &s, int freq);
+	short wav_produce(apu_stat &s, int freq, bool interpolation);
+	short noi_produce(apu_stat &s, int freq);
 	unsigned int mrand(dword degree);
 
 	apu_stat stat;
-	apu_stat stat_cpy,stat_tmp;
+	apu_stat stat_cpy;
 	apu_que write_que[0x10000];
 	int que_count;
 	int bef_clock;

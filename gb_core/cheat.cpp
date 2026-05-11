@@ -100,7 +100,7 @@ void cheat::create_cheat_map()
 	std::list<cheat_dat>::iterator ite;
 	cheat_dat *tmp;
 
-	memset(cheat_map,0,sizeof(int)*0x10000);
+	memset(cheat_map,0,sizeof(cheat_map));
 
 	for (ite=cheat_list.begin();ite!=cheat_list.end();ite++){
 		tmp=&(*ite);
