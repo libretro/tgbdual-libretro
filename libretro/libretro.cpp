@@ -40,8 +40,10 @@ static const struct retro_subsystem_memory_info gb2_memory[] = {
 };
 
 static const struct retro_subsystem_rom_info gb_roms[] = {
-    { "GameBoy #1", "gb|gbc", false, false, false, gb1_memory, 1 },
-    { "GameBoy #2", "gb|gbc", false, false, false, gb2_memory, 1 },
+    /* num_memory must cover both entries of the arrays above, or the
+       frontend never asks for the RTC and it is lost on exit */
+    { "GameBoy #1", "gb|gbc", false, false, false, gb1_memory, 2 },
+    { "GameBoy #2", "gb|gbc", false, false, false, gb2_memory, 2 },
 };
 
    static const struct retro_subsystem_info subsystems[] = {
@@ -395,6 +397,17 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 
    check_variables();
 
+   /* Loading the two-player subsystem is itself the request for a link
+      cable: the frontend has already asked for two ROMs, and the save
+      files it will look for afterwards (GAMEBOY_1_SRAM/GAMEBOY_2_SRAM)
+      only exist while both Game Boys do.  With the core option left at its
+      default ("disabled") the second Game Boy was never created, mode
+      stayed MODE_SINGLE_GAME, both subsystem SRAM ids reported size 0 and
+      the frontend silently persisted nothing - the game then reports its
+      save as erased on the next launch. */
+   if (num_info >= 2 && info[1].data)
+      gblink_enable = true;
+
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
    render[0] = new dmy_renderer(0);
@@ -481,8 +494,11 @@ void *retro_get_memory_data(unsigned id)
             switch(id)
             {
                 case RETRO_MEMORY_SAVE_RAM:
+                case RETRO_MEMORY_GAMEBOY_1_SRAM: /* subsystem content with
+                                                     only one Game Boy */
                     return g_gb[0]->get_rom()->get_sram();
                 case RETRO_MEMORY_RTC:
+                case RETRO_MEMORY_GAMEBOY_1_RTC:
                     return &(render[0]->fixed_time);
                 case RETRO_MEMORY_VIDEO_RAM:
                     return g_gb[0]->get_cpu()->get_vram();
@@ -527,8 +543,10 @@ size_t retro_get_memory_size(unsigned id)
             switch(id)
             {
                 case RETRO_MEMORY_SAVE_RAM:
+                case RETRO_MEMORY_GAMEBOY_1_SRAM:
                     return g_gb[0]->get_rom()->get_sram_size();
                 case RETRO_MEMORY_RTC:
+                case RETRO_MEMORY_GAMEBOY_1_RTC:
                     return sizeof(render[0]->fixed_time);
                 case RETRO_MEMORY_VIDEO_RAM:
                     if (g_gb[0]->get_rom()->get_info()->gb_type >= 3)
